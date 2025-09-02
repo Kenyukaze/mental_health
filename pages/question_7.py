@@ -124,7 +124,7 @@ st.markdown(
 )
 
 # Titre principal de la pag
-st.markdown('<p class="main-title">Évaluation de votre niveau de self-estime</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-title">Évaluation de votre niveau de solitude ?</p>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle">Question 7/7</p>', unsafe_allow_html=True)
 
 # Conteneur de la question
