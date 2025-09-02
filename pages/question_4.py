@@ -131,7 +131,7 @@ st.markdown('<p class="subtitle">Question 4/7</p>', unsafe_allow_html=True)
 st.markdown('''<div class="question-container">''', unsafe_allow_html=True)
 
 # Titre de la question
-st.markdown('<p class="Question 4 : A l\'heure actuelle, à quel point le plan financier vous stresse-t-il ?</p>', unsafe_allow_html=True)
+st.markdown('<p class="question-text">A l\'heure actuelle, à quel point le plan financier vous stresse-t-il ?</p>', unsafe_allow_html=True)
 
 # Description optionnelle
 st.markdown('<p class="question-description">Utilisez le curseur ci-dessous pour indiquer votre niveau de stress sur plan financier</p>', unsafe_allow_html=True)
