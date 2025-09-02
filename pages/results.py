@@ -6,6 +6,9 @@ from sklearn.cluster import KMeans
 from datetime import datetime
 import joblib
 import os
+from sklearn.decomposition import PCA
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Style CSS pour une présentation plus élégante
 st.markdown(
@@ -60,7 +63,7 @@ st.markdown(
         margin-bottom: 40px;
     }
     .cluster-image img {
-        width: 700px;       /* largeur fixe souhaitée */
+        width: 700px;
         height: auto;
         display: block;
         margin-left: auto;
@@ -126,7 +129,7 @@ if 'reponses_df' in st.session_state:
 
     # Préparer les données utilisateur
     user_data = {col: [0] for col in cols}
-    user_data['Age'] = [age_normalise]  # Utiliser l'âge normalisé
+    user_data['Age'] = [age_normalise]
     user_data['Family_History_Mental_Illness'] = [0]
 
     for q, response in st.session_state.reponses_df.iloc[0].items():
@@ -143,7 +146,7 @@ if 'reponses_df' in st.session_state:
     st.write("User data avant scaling :", user_df)
 
     user_data_scaled = scaler_ref.transform(user_df)
-    st.write("User data après scaling :", user_data_scaled)
+    st.write("User data après scaling :", pd.DataFrame(user_data_scaled, columns=cols))
 
     user_cluster = kmeans.predict(user_data_scaled)[0]
     st.write("Cluster prédit :", user_cluster)
@@ -176,12 +179,9 @@ if 'reponses_df' in st.session_state:
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Radar Chart
-    import plotly.graph_objects as go
-
     features = cols.copy()
     user_values = user_df.iloc[0].values.tolist()
     user_values.append(user_values[0])  # Fermer le radar chart
-
     feature_labels = {
         'Age': 'Âge',
         'Sleep_Hours': 'Heures de sommeil',
@@ -192,10 +192,8 @@ if 'reponses_df' in st.session_state:
         'Family_History_Mental_Illness': 'Antécédents familiaux',
         'Loneliness_Score': 'Sentiment de solitude'
     }
-
     features_display = [feature_labels[feature] for feature in features]
     features_display.append(features_display[0])
-
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
         r=user_values,
@@ -206,7 +204,6 @@ if 'reponses_df' in st.session_state:
         fillcolor='rgba(147, 112, 219, 0.1)',
         hovertemplate='%{theta}: %{r}<extra></extra>',
     ))
-
     fig.update_layout(
         polar=dict(
             bgcolor='rgba(0, 0, 0, 0)',
@@ -231,21 +228,14 @@ if 'reponses_df' in st.session_state:
             x=0.38,
         ),
     )
-
     st.plotly_chart(fig, use_container_width=True)
 
     # --- PCA Visualisation des clusters ---
-    from sklearn.decomposition import PCA
-    import plotly.express as px
-
     pca = PCA(n_components=2)
     pca_result = pca.fit_transform(df_ref_scaled)
-
     df_ref['pca1'] = pca_result[:, 0]
     df_ref['pca2'] = pca_result[:, 1]
-
     user_pca = pca.transform(user_data_scaled)
-
     fig_pca = px.scatter(
         df_ref,
         x="pca1", y="pca2",
@@ -255,7 +245,6 @@ if 'reponses_df' in st.session_state:
         width=700, height=500,
         color_discrete_sequence=px.colors.qualitative.Set2
     )
-
     fig_pca.add_scatter(
         x=[user_pca[0, 0]],
         y=[user_pca[0, 1]],
@@ -263,7 +252,6 @@ if 'reponses_df' in st.session_state:
         marker=dict(size=15, color="red", symbol="x"),
         name="Utilisateur"
     )
-
     st.plotly_chart(fig_pca, use_container_width=True)
 
     # --- Affichage de l'image du cluster ---
@@ -274,14 +262,12 @@ if 'reponses_df' in st.session_state:
         3: "Cluster_4.png",
         4: "Cluster_5.png"
     }
-
     script_dir = os.path.dirname(__file__)
     images_dir = os.path.join(os.path.dirname(script_dir), 'images')
     image_filename = os.path.join(images_dir, cluster_images.get(user_cluster, 'Cluster_1.png'))
-
     if os.path.exists(image_filename):
         st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
-        st.image(image_filename, width=700)
+        st.image(image_filename)
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.warning(f"L'image {image_filename} est introuvable.")
