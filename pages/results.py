@@ -58,14 +58,15 @@ st.markdown(
         text-align: center;
         margin-top: 40px;
         margin-bottom: 40px;
-    }
+}
     .cluster-image img {
-        max-width: auto;
+        width: 700px;       /* largeur fixe souhaitée */
+        max-width: 100%;    /* devient responsive si l'écran est plus petit */
         height: auto;
         display: block;
         margin-left: auto;
         margin-right: auto;
-    }
+}
     </style>
     """,
     unsafe_allow_html=True
@@ -242,9 +243,11 @@ if 'reponses_df' in st.session_state:
     image_filename = os.path.join(images_dir, cluster_images.get(user_cluster, 'Cluster_1.png'))
 
     # Vérifier si le fichier existe
+# Vérifier si le fichier existe
     if os.path.exists(image_filename):
         st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
-        st.image(image_filename, use_column_width=True)
+    # width=700 fixe la largeur à 700px (respecte max-width:100% si écran plus petit)
+        st.image(image_filename, width=700)
         st.markdown('</div>', unsafe_allow_html=True)
 
     else:
