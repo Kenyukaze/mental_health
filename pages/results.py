@@ -60,7 +60,7 @@ st.markdown(
         margin-bottom: 40px;
     }
     .cluster-image img {
-        max-width: 600px;
+        max-width: auto;
         height: auto;
         display: block;
         margin-left: auto;
