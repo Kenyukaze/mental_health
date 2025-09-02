@@ -58,13 +58,14 @@ st.markdown(
         text-align: center;
         margin-top: 40px;
         margin-bottom: 40px;
-}
+    }
     .cluster-image img {
         width: 700px;       /* largeur fixe souhaitée */
         height: auto;
-        margin-left: 800;
-        margin-right: 100;
-}
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -136,8 +137,21 @@ if 'reponses_df' in st.session_state:
             user_data[question_mapping[q]['variable']] = [value]
 
     user_df = pd.DataFrame(user_data)[cols]
+
+    # --- DEBUGGING ---
+    st.subheader("🔍 Debugging")
+    st.write("User data avant scaling :", user_df)
+
     user_data_scaled = scaler_ref.transform(user_df)
+    st.write("User data après scaling :", user_data_scaled)
+
     user_cluster = kmeans.predict(user_data_scaled)[0]
+    st.write("Cluster prédit :", user_cluster)
+
+    # Vérifier la répartition des clusters sur df_ref
+    df_ref_scaled = scaler_ref.transform(df_ref[cols])
+    df_ref['cluster'] = kmeans.predict(df_ref_scaled)
+    st.write("Répartition des clusters dans df_ref :", df_ref['cluster'].value_counts())
 
     # Affichage du cluster
     st.markdown(
@@ -164,12 +178,10 @@ if 'reponses_df' in st.session_state:
     # Radar Chart
     import plotly.graph_objects as go
 
-    # Préparer les données pour le radar chart
     features = cols.copy()
     user_values = user_df.iloc[0].values.tolist()
     user_values.append(user_values[0])  # Fermer le radar chart
 
-    # Dictionnaire pour renommer les labels dans le radar chart
     feature_labels = {
         'Age': 'Âge',
         'Sleep_Hours': 'Heures de sommeil',
@@ -181,11 +193,9 @@ if 'reponses_df' in st.session_state:
         'Loneliness_Score': 'Sentiment de solitude'
     }
 
-    # Appliquer le renommage aux labels du radar chart
     features_display = [feature_labels[feature] for feature in features]
-    features_display.append(features_display[0])  # Fermer le radar chart
+    features_display.append(features_display[0])
 
-    # Créer le radar chart avec les nouveaux labels
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
         r=user_values,
@@ -197,7 +207,6 @@ if 'reponses_df' in st.session_state:
         hovertemplate='%{theta}: %{r}<extra></extra>',
     ))
 
-    # Personnaliser le layout
     fig.update_layout(
         polar=dict(
             bgcolor='rgba(0, 0, 0, 0)',
@@ -223,8 +232,39 @@ if 'reponses_df' in st.session_state:
         ),
     )
 
-    # Afficher le radar chart
     st.plotly_chart(fig, use_container_width=True)
+
+    # --- PCA Visualisation des clusters ---
+    from sklearn.decomposition import PCA
+    import plotly.express as px
+
+    pca = PCA(n_components=2)
+    pca_result = pca.fit_transform(df_ref_scaled)
+
+    df_ref['pca1'] = pca_result[:, 0]
+    df_ref['pca2'] = pca_result[:, 1]
+
+    user_pca = pca.transform(user_data_scaled)
+
+    fig_pca = px.scatter(
+        df_ref,
+        x="pca1", y="pca2",
+        color=df_ref['cluster'].astype(str),
+        title="Visualisation des clusters (PCA 2D)",
+        opacity=0.6,
+        width=700, height=500,
+        color_discrete_sequence=px.colors.qualitative.Set2
+    )
+
+    fig_pca.add_scatter(
+        x=[user_pca[0, 0]],
+        y=[user_pca[0, 1]],
+        mode="markers",
+        marker=dict(size=15, color="red", symbol="x"),
+        name="Utilisateur"
+    )
+
+    st.plotly_chart(fig_pca, use_container_width=True)
 
     # --- Affichage de l'image du cluster ---
     cluster_images = {
@@ -235,19 +275,14 @@ if 'reponses_df' in st.session_state:
         4: "Cluster_5.png"
     }
 
-    # Chemin relatif basé sur le chemin du script
     script_dir = os.path.dirname(__file__)
     images_dir = os.path.join(os.path.dirname(script_dir), 'images')
     image_filename = os.path.join(images_dir, cluster_images.get(user_cluster, 'Cluster_1.png'))
 
-    # Vérifier si le fichier existe
-# Vérifier si le fichier existe
     if os.path.exists(image_filename):
         st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
-    # width=700 fixe la largeur à 700px (respecte max-width:100% si écran plus petit)
         st.image(image_filename, width=700)
         st.markdown('</div>', unsafe_allow_html=True)
-
     else:
         st.warning(f"L'image {image_filename} est introuvable.")
         st.write("Chemin des images :", images_dir)
