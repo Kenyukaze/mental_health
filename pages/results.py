@@ -229,17 +229,17 @@ if 'reponses_df' in st.session_state:
         4: "Cluster_5.png"
     }
 
-    # Chemin relatif pour les images (doit être dans le même dossier que results.py)
-    image_filename = cluster_images.get(user_cluster, "Cluster_1.png")
+    # Chemin relatif pour les images (remonte d'un niveau puis entre dans images/)
+    image_filename = f"../images/{cluster_images.get(user_cluster, 'Cluster_1.png')}"
 
     # Vérifier si le fichier existe
     if os.path.exists(image_filename):
         st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
-        st.image(image_filename, use_container_width=True)  # Correction : use_container_width au lieu de use_column_width
+        st.image(image_filename, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.warning(f"L'image {image_filename} est introuvable. Vérifiez que le fichier existe dans le dossier.")
-        st.write("Fichiers disponibles dans le dossier :", os.listdir())
+        st.write("Fichiers disponibles dans le dossier 'images' :", os.listdir("../images") if os.path.exists("../images") else "Dossier introuvable")
 
 else:
     st.markdown(
