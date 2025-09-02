@@ -98,6 +98,9 @@ question_mapping = {
 
 # Affichage des résultats uniquement si des réponses existent
 if 'reponses_df' in st.session_state:
+    # Conteneur pour les résultats
+    st.markdown('<div class="result-container">', unsafe_allow_html=True)
+
     # Charger les données de référence et le modèle
     df_ref = pd.read_csv("df_clusters.csv")
 
@@ -151,26 +154,18 @@ if 'reponses_df' in st.session_state:
 
     user_df = pd.DataFrame(user_data)[cols]
 
-    # Ajouter des colonnes pour les variables catégorielles manquantes avec des valeurs par défaut
-    for col in df_ref.columns:
-        if col not in user_df.columns and col.startswith(('Gender_', 'Education_Level_', 'Employment_Status_')):
-            user_df[col] = [0]  # Valeur par défaut pour les variables catégorielles
-
-    # Réorganiser les colonnes pour qu'elles correspondent à celles de df_ref
-    user_df = user_df[df_ref.columns]
-
     # --- DEBUGGING ---
     st.subheader("🔍 Debugging")
     st.write("User data avant scaling :", user_df)
 
     user_data_scaled = scaler_ref.transform(user_df)
-    st.write("User data après scaling :", pd.DataFrame(user_data_scaled, columns=user_df.columns))
+    st.write("User data après scaling :", pd.DataFrame(user_data_scaled, columns=cols))
 
     user_cluster = kmeans.predict(user_data_scaled)[0]
     st.write("Cluster prédit :", user_cluster)
 
     # Vérifier la répartition des clusters sur df_ref
-    df_ref_scaled = scaler_ref.transform(df_ref[df_ref.columns.intersection(user_df.columns)])
+    df_ref_scaled = scaler_ref.transform(df_ref[cols])
     df_ref['cluster'] = kmeans.predict(df_ref_scaled)
     st.write("Répartition des clusters dans df_ref :", df_ref['cluster'].value_counts())
 
