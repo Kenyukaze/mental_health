@@ -77,6 +77,7 @@ st.markdown(
 # Titre principal
 st.markdown('<p class="main-title">Vos Résultats</p>', unsafe_allow_html=True)
 
+import streamlit as st
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -104,6 +105,13 @@ if 'reponses_df' in st.session_state:
     # Charger les données de référence et le modèle
     df_ref = pd.read_csv("df_clusters.csv")
 
+    # Définir les colonnes continues et binaires
+    continuous_cols = [
+        'Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress',
+        'Work_Stress', 'Self_Esteem_Score', 'Loneliness_Score'
+    ]
+    binary_cols = ['Family_History_Mental_Illness']
+
     # Charger ou entraîner le modèle
     scaler_path = 'scaler.save'
     model_path = 'kmeans_model.save'
@@ -111,14 +119,15 @@ if 'reponses_df' in st.session_state:
         scaler_ref = joblib.load(scaler_path)
         kmeans = joblib.load(model_path)
     else:
-        # Sélectionner les colonnes numériques pour le clustering
-        cols = [
-            'Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress',
-            'Work_Stress', 'Self_Esteem_Score', 'Family_History_Mental_Illness', 'Loneliness_Score'
-        ]
-        X_ref = df_ref[cols]
+        # Normaliser uniquement les colonnes continues
         scaler_ref = StandardScaler()
-        X_ref_scaled = scaler_ref.fit_transform(X_ref)
+        X_ref_continuous = df_ref[continuous_cols]
+        X_ref_continuous_scaled = scaler_ref.fit_transform(X_ref_continuous)
+
+        # Ajouter la colonne binaire
+        X_ref_binary = df_ref[binary_cols].values
+        X_ref_scaled = np.hstack((X_ref_continuous_scaled, X_ref_binary))
+
         kmeans = KMeans(n_clusters=5, random_state=42)
         kmeans.fit(X_ref_scaled)
         joblib.dump(scaler_ref, scaler_path)
@@ -137,13 +146,9 @@ if 'reponses_df' in st.session_state:
     age_normalise = int(((age - 18) / (99 - 18)) * 9) + 1
 
     # Préparer les données utilisateur
-    cols = [
-        'Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress',
-        'Work_Stress', 'Self_Esteem_Score', 'Family_History_Mental_Illness', 'Loneliness_Score'
-    ]
-    user_data = {col: [0] for col in cols}
+    user_data = {col: [0] for col in continuous_cols + binary_cols}
     user_data['Age'] = [age_normalise]
-    user_data['Family_History_Mental_Illness'] = [0]
+    user_data['Family_History_Mental_Illness'] = [0]  # Par défaut, 0 signifie "Non"
 
     for q, response in st.session_state.reponses_df.iloc[0].items():
         if q in question_mapping:
@@ -152,21 +157,35 @@ if 'reponses_df' in st.session_state:
                 value = 10 - value
             user_data[question_mapping[q]['variable']] = [value]
 
-    user_df = pd.DataFrame(user_data)[cols]
+    # Si la question Q6 est présente, mettre à jour Family_History_Mental_Illness
+    if 'Q6' in st.session_state.reponses_df.columns:
+        user_data['Family_History_Mental_Illness'] = [1 if st.session_state.reponses_df.iloc[0]['Q6'] > 5 else 0]
+
+    user_df = pd.DataFrame(user_data)[continuous_cols + binary_cols]
 
     # --- DEBUGGING ---
     st.subheader("🔍 Debugging")
     st.write("User data avant scaling :", user_df)
 
-    user_data_scaled = scaler_ref.transform(user_df)
-    st.write("User data après scaling :", pd.DataFrame(user_data_scaled, columns=cols))
+    # Normaliser uniquement les colonnes continues
+    user_continuous = user_df[continuous_cols]
+    user_continuous_scaled = scaler_ref.transform(user_continuous)
 
-    user_cluster = kmeans.predict(user_data_scaled)[0]
+    # Ajouter la colonne binaire
+    user_binary = user_df[binary_cols].values
+    user_data_scaled = np.hstack((user_continuous_scaled, user_binary))
+
+    st.write("User data après scaling :", pd.DataFrame(user_data_scaled, columns=continuous_cols + binary_cols))
+
+    user_cluster = kmeans.predict([user_data_scaled])[0]
     st.write("Cluster prédit :", user_cluster)
 
     # Vérifier la répartition des clusters sur df_ref
-    df_ref_scaled = scaler_ref.transform(df_ref[cols])
-    df_ref['cluster'] = kmeans.predict(df_ref_scaled)
+    X_ref_continuous = df_ref[continuous_cols]
+    X_ref_continuous_scaled = scaler_ref.transform(X_ref_continuous)
+    X_ref_binary = df_ref[binary_cols].values
+    X_ref_scaled = np.hstack((X_ref_continuous_scaled, X_ref_binary))
+    df_ref['cluster'] = kmeans.predict(X_ref_scaled)
     st.write("Répartition des clusters dans df_ref :", df_ref['cluster'].value_counts())
 
     # Affichage du cluster
@@ -174,6 +193,7 @@ if 'reponses_df' in st.session_state:
         f'<p class="cluster-title">Vous appartenez au groupe : {user_cluster + 1}</p>',
         unsafe_allow_html=True
     )
+
 
 
     # Interprétation des clusters
