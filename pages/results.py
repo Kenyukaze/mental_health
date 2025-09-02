@@ -63,7 +63,7 @@ st.markdown(
         width: 700px;       /* largeur fixe souhaitée */
         height: auto;
         display: block;
-        margin-left: auto;
+        margin-left: 800;
         margin-right: auto;
 }
     </style>
