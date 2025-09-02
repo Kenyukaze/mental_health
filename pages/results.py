@@ -237,7 +237,7 @@ if 'reponses_df' in st.session_state:
     # Vérifier si le fichier existe
     if os.path.exists(image_filename):
         st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
-        st.image(image_filename, width=200)  # Ajuste la valeur 400 selon tes besoins
+        st.image(image_filename, width=400)  # Ajuste la valeur 400 selon tes besoins
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.warning(f"L'image {image_filename} est introuvable.")
