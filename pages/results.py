@@ -77,6 +77,14 @@ st.markdown(
 # Titre principal
 st.markdown('<p class="main-title">Vos Résultats</p>', unsafe_allow_html=True)
 
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from datetime import datetime
+import joblib
+import os
+
 # Définir le mapping entre questions et variables du modèle
 question_mapping = {
     'Q1': {'variable': 'Work_Stress', 'inverse': False},
@@ -90,15 +98,8 @@ question_mapping = {
 
 # Affichage des résultats uniquement si des réponses existent
 if 'reponses_df' in st.session_state:
-    # Conteneur pour les résultats
-    st.markdown('<div class="result-container">', unsafe_allow_html=True)
-
     # Charger les données de référence et le modèle
     df_ref = pd.read_csv("df_clusters.csv")
-    cols = [
-        'Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress',
-        'Work_Stress', 'Self_Esteem_Score', 'Family_History_Mental_Illness', 'Loneliness_Score'
-    ]
 
     # Charger ou entraîner le modèle
     scaler_path = 'scaler.save'
@@ -107,6 +108,11 @@ if 'reponses_df' in st.session_state:
         scaler_ref = joblib.load(scaler_path)
         kmeans = joblib.load(model_path)
     else:
+        # Sélectionner les colonnes numériques pour le clustering
+        cols = [
+            'Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress',
+            'Work_Stress', 'Self_Esteem_Score', 'Family_History_Mental_Illness', 'Loneliness_Score'
+        ]
         X_ref = df_ref[cols]
         scaler_ref = StandardScaler()
         X_ref_scaled = scaler_ref.fit_transform(X_ref)
@@ -128,6 +134,10 @@ if 'reponses_df' in st.session_state:
     age_normalise = int(((age - 18) / (99 - 18)) * 9) + 1
 
     # Préparer les données utilisateur
+    cols = [
+        'Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress',
+        'Work_Stress', 'Self_Esteem_Score', 'Family_History_Mental_Illness', 'Loneliness_Score'
+    ]
     user_data = {col: [0] for col in cols}
     user_data['Age'] = [age_normalise]
     user_data['Family_History_Mental_Illness'] = [0]
@@ -141,18 +151,26 @@ if 'reponses_df' in st.session_state:
 
     user_df = pd.DataFrame(user_data)[cols]
 
+    # Ajouter des colonnes pour les variables catégorielles manquantes avec des valeurs par défaut
+    for col in df_ref.columns:
+        if col not in user_df.columns and col.startswith(('Gender_', 'Education_Level_', 'Employment_Status_')):
+            user_df[col] = [0]  # Valeur par défaut pour les variables catégorielles
+
+    # Réorganiser les colonnes pour qu'elles correspondent à celles de df_ref
+    user_df = user_df[df_ref.columns]
+
     # --- DEBUGGING ---
     st.subheader("🔍 Debugging")
     st.write("User data avant scaling :", user_df)
 
     user_data_scaled = scaler_ref.transform(user_df)
-    st.write("User data après scaling :", pd.DataFrame(user_data_scaled, columns=cols))
+    st.write("User data après scaling :", pd.DataFrame(user_data_scaled, columns=user_df.columns))
 
     user_cluster = kmeans.predict(user_data_scaled)[0]
     st.write("Cluster prédit :", user_cluster)
 
     # Vérifier la répartition des clusters sur df_ref
-    df_ref_scaled = scaler_ref.transform(df_ref[cols])
+    df_ref_scaled = scaler_ref.transform(df_ref[df_ref.columns.intersection(user_df.columns)])
     df_ref['cluster'] = kmeans.predict(df_ref_scaled)
     st.write("Répartition des clusters dans df_ref :", df_ref['cluster'].value_counts())
 
@@ -161,6 +179,7 @@ if 'reponses_df' in st.session_state:
         f'<p class="cluster-title">Vous appartenez au groupe : {user_cluster + 1}</p>',
         unsafe_allow_html=True
     )
+
 
     # Interprétation des clusters
     interpretations = {
