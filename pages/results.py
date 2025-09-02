@@ -220,29 +220,23 @@ if 'reponses_df' in st.session_state:
     # Afficher le radar chart
     st.plotly_chart(fig, use_container_width=True)
 
-    # --- Affichage de l'image du cluster ---
-    cluster_images = {
-        0: "Cluster_1.png",
-        1: "Cluster_2.png",
-        2: "Cluster_3.png",
-        3: "Cluster_4.png",
-        4: "Cluster_5.png"
-    }
+# --- Affichage de l'image du cluster ---
+cluster_images = {
+    0: "Cluster_1.png",
+    1: "Cluster_2.png",
+    2: "Cluster_3.png",
+    3: "Cluster_4.png",
+    4: "Cluster_5.png"
+}
 
-    # Chemin relatif pour les images (remonte d'un niveau puis entre dans images/)
-    image_filename = f"../images/{cluster_images.get(user_cluster, 'Cluster_1.png')}"
+# Chemin absolu pour les tests locaux (remplace par le chemin réel sur ton ordinateur)
+image_filename = f"C:/chemin/vers/ton/projet/mental_health/images/{cluster_images.get(user_cluster, 'Cluster_1.png')}"
 
-    # Vérifier si le fichier existe
-    if os.path.exists(image_filename):
-        st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
-        st.image(image_filename, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.warning(f"L'image {image_filename} est introuvable. Vérifiez que le fichier existe dans le dossier.")
-        st.write("Fichiers disponibles dans le dossier 'images' :", os.listdir("../images") if os.path.exists("../images") else "Dossier introuvable")
-
+# Vérifier si le fichier existe
+if os.path.exists(image_filename):
+    st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
+    st.image(image_filename, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 else:
-    st.markdown(
-        '<p style="color: #6A5ACD; font-size: 1.2em; text-align: center;">Aucune réponse enregistrée.</p>',
-        unsafe_allow_html=True
-    )
+    st.warning(f"L'image {image_filename} est introuvable.")
+    st.write("Chemin absolu testé :", image_filename)
