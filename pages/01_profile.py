@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Style personnalisé pour la charte graphique
+# Style personnalisé pour la charte graphiques
 st.markdown(
     """
     <style>
