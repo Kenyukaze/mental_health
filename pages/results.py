@@ -196,6 +196,7 @@ if 'reponses_df' in st.session_state:
 
 
 
+
     # Interprétation des clusters
     interpretations = {
         0: "Votre profil indique un bien-être général élevé.",
