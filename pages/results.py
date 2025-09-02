@@ -222,11 +222,11 @@ if 'reponses_df' in st.session_state:
 
     # --- Affichage de l'image du cluster ---
     cluster_images = {
-        0: "cluster_1.png",
-        1: "cluster_2.png",
-        2: "cluster_3.png",
-        3: "cluster_4.png",
-        4: "cluster_5.png"
+        0: "Cluster_1.png",
+        1: "Cluster_2.png",
+        2: "Cluster_3.png",
+        3: "Cluster_4.png",
+        4: "Cluster_5.png"
     }
 
     # Chemin des images (place tes fichiers PNG dans le même dossier que results.py)
