@@ -54,6 +54,11 @@ st.markdown(
         border-radius: 10px;
         border-left: 4px solid #9370DB;
     }
+    .cluster-image {
+        text-align: center;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -214,6 +219,24 @@ if 'reponses_df' in st.session_state:
 
     # Afficher le radar chart
     st.plotly_chart(fig, use_container_width=True)
+
+    # --- Affichage de l'image du cluster ---
+    cluster_images = {
+        0: "cluster_1.png",
+        1: "cluster_2.png",
+        2: "cluster_3.png",
+        3: "cluster_4.png",
+        4: "cluster_5.png"
+    }
+
+    # Chemin des images (place tes fichiers PNG dans le même dossier que results.py)
+    image_path = cluster_images.get(user_cluster, "cluster_1.png")
+
+    # Afficher l'image centrée sous le radar chart
+    st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
+    st.image(image_path, use_column_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 else:
     st.markdown(
         '<p style="color: #6A5ACD; font-size: 1.2em; text-align: center;">Aucune réponse enregistrée.</p>',
