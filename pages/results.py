@@ -220,23 +220,33 @@ if 'reponses_df' in st.session_state:
     # Afficher le radar chart
     st.plotly_chart(fig, use_container_width=True)
 
-# --- Affichage de l'image du cluster ---
-cluster_images = {
-    0: "Cluster_1.png",
-    1: "Cluster_2.png",
-    2: "Cluster_3.png",
-    3: "Cluster_4.png",
-    4: "Cluster_5.png"
-}
+    # --- Affichage de l'image du cluster ---
+    cluster_images = {
+        0: "Cluster_1.png",
+        1: "Cluster_2.png",
+        2: "Cluster_3.png",
+        3: "Cluster_4.png",
+        4: "Cluster_5.png"
+    }
 
-# Chemin absolu pour les tests locaux (remplace par le chemin réel sur ton ordinateur)
-image_filename = f"C:/chemin/vers/ton/projet/mental_health/images/{cluster_images.get(user_cluster, 'Cluster_1.png')}"
+    # Chemin relatif basé sur le chemin du script
+    script_dir = os.path.dirname(__file__)
+    images_dir = os.path.join(os.path.dirname(script_dir), 'images')
+    image_filename = os.path.join(images_dir, cluster_images.get(user_cluster, 'Cluster_1.png'))
 
-# Vérifier si le fichier existe
-if os.path.exists(image_filename):
-    st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
-    st.image(image_filename, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Vérifier si le fichier existe
+    if os.path.exists(image_filename):
+        st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
+        st.image(image_filename, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.warning(f"L'image {image_filename} est introuvable.")
+        st.write("Chemin des images :", images_dir)
+        st.write("Fichiers disponibles dans le dossier 'images' :", os.listdir(images_dir) if os.path.exists(images_dir) else "Dossier introuvable")
+        st.write("Dossier courant :", os.listdir(os.path.dirname(script_dir)))
+
 else:
-    st.warning(f"L'image {image_filename} est introuvable.")
-    st.write("Chemin absolu testé :", image_filename)
+    st.markdown(
+        '<p style="color: #6A5ACD; font-size: 1.2em; text-align: center;">Aucune réponse enregistrée.</p>',
+        unsafe_allow_html=True
+    )
