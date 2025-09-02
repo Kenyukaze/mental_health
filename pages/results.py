@@ -63,8 +63,8 @@ st.markdown(
         max-width: 600px;
         height: auto;
         display: block;
-        margin-left: 0px;
-        margin-right: 0px;
+        margin-left: auto;
+        margin-right: auto;
     }
     </style>
     """,
@@ -244,8 +244,9 @@ if 'reponses_df' in st.session_state:
     # Vérifier si le fichier existe
     if os.path.exists(image_filename):
         st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
-        st.image(image_filename)
+        st.image(image_filename, use_column_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
+
     else:
         st.warning(f"L'image {image_filename} est introuvable.")
         st.write("Chemin des images :", images_dir)
