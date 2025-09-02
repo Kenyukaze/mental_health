@@ -84,7 +84,7 @@ if 'reponses_df' in st.session_state:
     st.markdown('<div class="result-container">', unsafe_allow_html=True)
 
     # Charger les données de référence et le modèle
-    df_ref = pd.read_csv(r"df_clusters.csv")
+    df_ref = pd.read_csv("df_clusters.csv")
     cols = [
         'Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress',
         'Work_Stress', 'Self_Esteem_Score', 'Family_History_Mental_Illness', 'Loneliness_Score'
@@ -159,7 +159,7 @@ if 'reponses_df' in st.session_state:
     import plotly.graph_objects as go
 
     # Préparer les données pour le radar chart
-    features = cols.copy()  # Liste originale des colonnes
+    features = cols.copy()
     user_values = user_df.iloc[0].values.tolist()
     user_values.append(user_values[0])  # Fermer le radar chart
 
@@ -183,37 +183,37 @@ if 'reponses_df' in st.session_state:
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
         r=user_values,
-        theta=features_display,  # Utiliser les labels renommés
+        theta=features_display,
         fill='toself',
         name='Vos valeurs',
-        line_color='#9370DB',  # Couleur de la ligne
-        fillcolor='rgba(147, 112, 219, 0.1)',  # Couleur de remplissage (transparence à 10%)
-        hovertemplate='%{theta}: %{r}<extra></extra>',  # Info-bulle simplifiée
+        line_color='#9370DB',
+        fillcolor='rgba(147, 112, 219, 0.1)',
+        hovertemplate='%{theta}: %{r}<extra></extra>',
     ))
 
     # Personnaliser le layout
     fig.update_layout(
         polar=dict(
-            bgcolor='rgba(0, 0, 0, 0)',  # Fond transparent
+            bgcolor='rgba(0, 0, 0, 0)',
             radialaxis=dict(
                 visible=True,
-                range=[0, 10],  # Plage de 0 à 10
-                tickfont=dict(color='#6A5ACD'),  # Couleur des graduations
-                gridcolor='#E6E6FA',  # Couleur de la grille
+                range=[0, 10],
+                tickfont=dict(color='#6A5ACD'),
+                gridcolor='#E6E6FA',
             ),
             angularaxis=dict(
-                direction='clockwise',  # Sens des aiguilles d'une montre
-                tickfont=dict(color='#6A5ACD'),  # Couleur des labels
+                direction='clockwise',
+                tickfont=dict(color='#6A5ACD'),
             ),
         ),
-        showlegend=False,  # Masquer la légende
-        paper_bgcolor='rgba(0, 0, 0, 0)',  # Fond transparent pour la figure
-        plot_bgcolor='rgba(0, 0, 0, 0)',  # Fond transparent pour le graphique
-        margin=dict(l=50, r=50, b=50, t=50),  # Marges réduites
+        showlegend=False,
+        paper_bgcolor='rgba(0, 0, 0, 0)',
+        plot_bgcolor='rgba(0, 0, 0, 0)',
+        margin=dict(l=50, r=50, b=50, t=50),
         title=dict(
             text="Radar Chart de vos indicateurs",
             font=dict(size=18, color='#6A5ACD'),
-            x=0.38,  # Centrer le titre
+            x=0.38,
         ),
     )
 
@@ -229,13 +229,17 @@ if 'reponses_df' in st.session_state:
         4: "Cluster_5.png"
     }
 
-    # Chemin des images (place tes fichiers PNG dans le même dossier que results.py)
-    image_path = cluster_images.get(user_cluster, "cluster_1.png")
+    # Chemin relatif pour les images (doit être dans le même dossier que results.py)
+    image_filename = cluster_images.get(user_cluster, "Cluster_1.png")
 
-    # Afficher l'image centrée sous le radar chart
-    st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
-    st.image(image_path, use_column_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Vérifier si le fichier existe
+    if os.path.exists(image_filename):
+        st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
+        st.image(image_filename, use_container_width=True)  # Correction : use_container_width au lieu de use_column_width
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.warning(f"L'image {image_filename} est introuvable. Vérifiez que le fichier existe dans le dossier.")
+        st.write("Fichiers disponibles dans le dossier :", os.listdir())
 
 else:
     st.markdown(
