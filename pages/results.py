@@ -63,8 +63,8 @@ st.markdown(
         max-width: 600px;
         height: auto;
         display: block;
-        margin-left: auto;
-        margin-right: auto;
+        margin-left: 600px;
+        margin-right: 600px;
     }
     </style>
     """,
