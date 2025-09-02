@@ -61,7 +61,6 @@ st.markdown(
 }
     .cluster-image img {
         width: 700px;       /* largeur fixe souhaitée */
-        max-width: 100%;    /* devient responsive si l'écran est plus petit */
         height: auto;
         display: block;
         margin-left: auto;
