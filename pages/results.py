@@ -212,7 +212,7 @@ if 'reponses_df' in st.session_state:
         margin=dict(l=50, r=50, b=50, t=50),
         title=dict(
             text="Radar Chart de vos indicateurs",
-            font=dict(size=18, color='#6A5ACD'),
+            font=dict(size=14, color='#6A5ACD'),
             x=0.38,
         ),
     )
