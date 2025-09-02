@@ -77,15 +77,6 @@ st.markdown(
 # Titre principal
 st.markdown('<p class="main-title">Vos Résultats</p>', unsafe_allow_html=True)
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
-from datetime import datetime
-import joblib
-import os
-
 # Définir le mapping entre questions et variables du modèle
 question_mapping = {
     'Q1': {'variable': 'Work_Stress', 'inverse': False},
@@ -167,8 +158,9 @@ if 'reponses_df' in st.session_state:
     st.subheader("🔍 Debugging")
     st.write("User data avant scaling :", user_df)
 
-    # Normaliser uniquement les colonnes continues
-    user_continuous = user_df[continuous_cols]
+    # Normaliser uniquement les colonnes continues avec vérification des noms
+    expected_features = scaler_ref.feature_names_in_
+    user_continuous = user_df[expected_features]
     user_continuous_scaled = scaler_ref.transform(user_continuous)
 
     # Ajouter la colonne binaire
@@ -194,9 +186,6 @@ if 'reponses_df' in st.session_state:
         unsafe_allow_html=True
     )
 
-
-
-
     # Interprétation des clusters
     interpretations = {
         0: "Votre profil indique un bien-être général élevé.",
@@ -214,7 +203,7 @@ if 'reponses_df' in st.session_state:
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Radar Chart
-    features = cols.copy()
+    features = continuous_cols + binary_cols
     user_values = user_df.iloc[0].values.tolist()
     user_values.append(user_values[0])  # Fermer le radar chart
     feature_labels = {
@@ -267,10 +256,10 @@ if 'reponses_df' in st.session_state:
 
     # --- PCA Visualisation des clusters ---
     pca = PCA(n_components=2)
-    pca_result = pca.fit_transform(df_ref_scaled)
+    pca_result = pca.fit_transform(X_ref_scaled)
     df_ref['pca1'] = pca_result[:, 0]
     df_ref['pca2'] = pca_result[:, 1]
-    user_pca = pca.transform(user_data_scaled)
+    user_pca = pca.transform([user_data_scaled])
     fig_pca = px.scatter(
         df_ref,
         x="pca1", y="pca2",
