@@ -131,7 +131,7 @@ st.markdown('<p class="subtitle">Question 3/7</p>', unsafe_allow_html=True)
 st.markdown('''<div class="question-container">''', unsafe_allow_html=True)
 
 # Titre de la question
-st.markdown('<p class="question-text">"Question 3 : Comment évaluez vous la qualité du soutien social dont vous disposez ?</p>', unsafe_allow_html=True)
+st.markdown('<p class="question-text">Comment évaluez vous la qualité du soutien social dont vous disposez ?</p>', unsafe_allow_html=True)
 
 
 # Description optionnelle
