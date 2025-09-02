@@ -62,9 +62,8 @@ st.markdown(
     .cluster-image img {
         width: 700px;       /* largeur fixe souhaitée */
         height: auto;
-        display: block;
         margin-left: 800;
-        margin-right: auto;
+        margin-right: 100;
 }
     </style>
     """,
