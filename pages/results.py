@@ -79,7 +79,7 @@ if 'reponses_df' in st.session_state:
     st.markdown('<div class="result-container">', unsafe_allow_html=True)
 
     # Charger les données de référence et le modèle
-    df_ref = pd.read_csv(r"D:\Documents\VSCODE\LWG\Projet Santé mentale\df_clusters.csv")
+    df_ref = pd.read_csv(r"D:\Documents\GitHub\mental_health\df_clusters.csv")
     cols = [
         'Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress',
         'Work_Stress', 'Self_Esteem_Score', 'Family_History_Mental_Illness', 'Loneliness_Score'
