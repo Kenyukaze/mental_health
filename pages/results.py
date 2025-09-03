@@ -49,12 +49,13 @@ if 'reponses_df' in st.session_state:
 
     # Charger données référence et modèles
     df_ref = pd.read_csv("df_clusters.csv")
-    continuous_cols = ['Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress', 'Work_Stress', 'Self_Esteem_Score', 'Loneliness_Score']
+    continuous_cols = ['Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress',
+                       'Work_Stress', 'Self_Esteem_Score', 'Loneliness_Score']
     dependent_vars = ['Anxiety_Score', 'Depression_Score', 'Stress_Level']
     binary_cols = ['Family_History_Mental_Illness']
     independent_vars = continuous_cols + binary_cols
 
-    # Vérifier et recharger/réentraîner le scaler et le modèle si nécessaire
+    # Vérifier scaler et modèle clustering
     scaler_path = 'scaler.save'
     model_path = 'kmeans_model.save'
     if os.path.exists(scaler_path) and os.path.exists(model_path):
@@ -84,12 +85,13 @@ if 'reponses_df' in st.session_state:
     # Calcul âge utilisateur
     if 'profile_info' in st.session_state:
         date_naissance = st.session_state.profile_info['date_naissance']
-        age = datetime.now().year - date_naissance.year - ((datetime.now().month, datetime.now().day) < (date_naissance.month, date_naissance.day))
+        age = datetime.now().year - date_naissance.year - (
+            (datetime.now().month, datetime.now().day) < (date_naissance.month, date_naissance.day))
     else:
         age = 25
     age_normalise = int(((age - 18) / (99 - 18)) * 9) + 1
 
-    # Préparer données utilisateur
+    # Données utilisateur pour clustering
     user_data = {col: [0] for col in continuous_cols + binary_cols}
     user_data['Age'] = [age_normalise]
     for q, response in st.session_state.reponses_df.iloc[0].items():
@@ -99,23 +101,17 @@ if 'reponses_df' in st.session_state:
                 val = 10 - val
             user_data[question_mapping[q]['variable']] = [val]
 
-    # Corriger la logique pour Family_History_Mental_Illness
     if 'Q6' in st.session_state.reponses_df.columns:
         user_data['Family_History_Mental_Illness'] = [1 if st.session_state.reponses_df.iloc[0]['Q6'] <= 5 else 0]
 
     user_df = pd.DataFrame(user_data)[continuous_cols + binary_cols]
-    user_df[continuous_cols] = user_df[continuous_cols][scaler_ref.feature_names_in_]
-
-    # Scaling et clustering
     user_continuous_scaled = scaler_ref.transform(user_df[continuous_cols])
     user_binary = user_df[binary_cols].values
     user_data_scaled = np.hstack((user_continuous_scaled, user_binary))
     user_cluster = kmeans.predict(user_data_scaled.reshape(1, -1))[0]
 
-    # Affichage du groupe
+    # Affichage cluster
     st.markdown(f'<p class="cluster-title">Vous appartenez au groupe : {user_cluster + 1}</p>', unsafe_allow_html=True)
-
-    # Interprétation clusters
     interpretations = {
         0: "Votre profil indique un bien-être général élevé.",
         1: "Votre profil indique un bien-être moyen avec quelques points à améliorer.",
@@ -125,14 +121,15 @@ if 'reponses_df' in st.session_state:
     }
     st.markdown(f'<div class="interpretation">{interpretations.get(user_cluster, "Interprétation non disponible")}</div>', unsafe_allow_html=True)
 
-    # Radar Chart utilisateur
+    # Radar chart clustering
     features = continuous_cols + binary_cols
     user_values = user_df.iloc[0].values.tolist()
     user_values.append(user_values[0])
     feature_labels = {
         'Age': 'Âge', 'Sleep_Hours': 'Heures de sommeil', 'Social_Support_Score': 'Soutien social',
-        'Financial_Stress': 'Stress financier', 'Work_Stress': 'Stress au travail', 'Self_Esteem_Score': 'Estime de soi',
-        'Family_History_Mental_Illness': 'Antécédents familiaux', 'Loneliness_Score': 'Sentiment de solitude'
+        'Financial_Stress': 'Stress financier', 'Work_Stress': 'Stress au travail',
+        'Self_Esteem_Score': 'Estime de soi', 'Family_History_Mental_Illness': 'Antécédents familiaux',
+        'Loneliness_Score': 'Sentiment de solitude'
     }
     features_display = [feature_labels[f] for f in features]
     features_display.append(features_display[0])
@@ -168,101 +165,71 @@ if 'reponses_df' in st.session_state:
         st.image(image_filename)
         st.markdown('</div>', unsafe_allow_html=True)
 
-# NOUVEAU : Radar Chart des scores prédits
-# =============================================
+# =====================================================
+# Régression et radar chart des scores prédits
+# =====================================================
 st.markdown('<p class="regression-title">Analyse des scores de bien-être</p>', unsafe_allow_html=True)
 
-# Ajouter une constante pour la régression
 df_encoded = sm.add_constant(df_ref[independent_vars + dependent_vars].dropna())
 
-# Fonction pour exécuter la régression linéaire multivariée
 def run_regression(df, dependent_var, independent_vars):
-    X = df[independent_vars]
-    y = df[dependent_var]
-    X = X.astype(float)
-    y = y.astype(float)
-    model = sm.OLS(y, X).fit()
-    return model
+    X = df[independent_vars].astype(float)
+    y = df[dependent_var].astype(float)
+    return sm.OLS(y, X).fit()
 
-# Exécuter la régression pour chaque variable dépendante
 models = {}
 for dep_var in dependent_vars:
     if dep_var in df_encoded.columns:
         models[dep_var] = run_regression(df_encoded, dep_var, ['const'] + independent_vars)
 
-# Préparer les données de l'utilisateur
-user_data = {col: [0] for col in continuous_cols + binary_cols}
-
-# Calcul de l'âge utilisateur
-if 'profile_info' in st.session_state:
-    date_naissance = st.session_state.profile_info['date_naissance']
-    age = datetime.now().year - date_naissance.year - ((datetime.now().month, datetime.now().day) < (date_naissance.month, date_naissance.day))
-else:
-    age = 25
-age_normalise = int(((age - 18) / (99 - 18)) * 9) + 1
-user_data['Age'] = [age_normalise]
-
-# Remplir les données utilisateur à partir des réponses
+# 🔹 Construire un DataFrame utilisateur spécifique à la régression
+user_data_reg = {}
+user_data_reg['Age'] = age_normalise
 for q, response in st.session_state.reponses_df.iloc[0].items():
     if q in question_mapping:
         val = response
         if question_mapping[q]['inverse']:
             val = 10 - val
-        user_data[question_mapping[q]['variable']] = [val]
-
-# Corriger la logique pour Family_History_Mental_Illness
+        user_data_reg[question_mapping[q]['variable']] = val
 if 'Q6' in st.session_state.reponses_df.columns:
-    user_data['Family_History_Mental_Illness'] = [1 if st.session_state.reponses_df.iloc[0]['Q6'] <= 5 else 0]
+    user_data_reg['Family_History_Mental_Illness'] = 1 if st.session_state.reponses_df.iloc[0]['Q6'] <= 5 else 0
 
-# Préparer les données de l'utilisateur pour la prédiction
-user_df_for_prediction = pd.DataFrame(user_data)
-
-# Vérifier que les colonnes de user_df_for_prediction sont dans le bon ordre
 expected_columns = ['const'] + independent_vars
-user_df_for_prediction = sm.add_constant(user_df_for_prediction)
+user_df_regression = pd.DataFrame([user_data_reg])
+user_df_regression = sm.add_constant(user_df_regression, has_constant='add')
+user_df_regression = user_df_regression.reindex(columns=expected_columns, fill_value=0)
 
-# Vérifier que toutes les colonnes nécessaires sont présentes
-for col in independent_vars:
-    if col not in user_df_for_prediction.columns:
-        user_df_for_prediction[col] = 0  # ou une autre valeur par défaut
-
-# Réorganiser les colonnes pour qu'elles correspondent à l'ordre attendu
-user_df_for_prediction = user_df_for_prediction[expected_columns]
-
-# Prédire les scores pour l'utilisateur
+# 🔹 Prédire les scores
 predicted_scores = {}
 for dep_var, model in models.items():
-    predicted_scores[dep_var] = model.predict(user_df_for_prediction)[0]
+    cols_needed = list(model.params.index)
+    X_user = user_df_regression.reindex(columns=cols_needed, fill_value=0).astype(float)
+    predicted_scores[dep_var] = float(model.predict(X_user)[0])
 
-# Normaliser les scores entre 0 et 1
 min_score = min(predicted_scores.values())
 max_score = max(predicted_scores.values())
-normalized_scores = {k: (v - min_score) / (max_score - min_score) for k, v in predicted_scores.items()}
+if max_score == min_score:
+    normalized_scores = {k: 0.5 for k in predicted_scores}
+else:
+    normalized_scores = {k: (v - min_score) / (max_score - min_score) for k, v in predicted_scores.items()}
 
-# Radar Chart des scores prédits
+# 🔹 Radar chart des scores prédits
 fig_scores = go.Figure()
-
-# Ajouter les scores normalisés au radar chart
 fig_scores.add_trace(go.Scatterpolar(
-    r=list(normalized_scores.values()) + [list(normalized_scores.values())[0]],  # Fermer le polygone
-    theta=[var.replace('_', ' ') for var in normalized_scores.keys()] + [var.replace('_', ' ') for var in normalized_scores.keys()][:1],  # Fermer le polygone
+    r=list(normalized_scores.values()) + [list(normalized_scores.values())[0]],
+    theta=[var.replace('_', ' ') for var in normalized_scores.keys()] +
+          [list(normalized_scores.keys())[0].replace('_', ' ')],
     fill='toself',
     name='Vos scores prédits',
     line_color='#9370DB',
     fillcolor='rgba(147,112,219,0.1)'
 ))
-
 fig_scores.update_layout(
-    polar=dict(
-        radialaxis=dict(
-            visible=True,
-            range=[0, 1]
-        )),
+    polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
     title='Scores de bien-être (normalisés)',
     showlegend=False,
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
     margin=dict(l=50, r=50, b=50, t=50),
 )
-
 st.plotly_chart(fig_scores, use_container_width=True)
