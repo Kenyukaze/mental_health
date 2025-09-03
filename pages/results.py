@@ -95,6 +95,13 @@ if 'reponses_df' in st.session_state:
     st.subheader("🔍 Debugging")
     st.write("User data avant scaling :", user_df)
 
+    # Vérifier l'ordre des colonnes
+    st.write("Colonnes du scaler :", scaler_ref.feature_names_in_)
+    st.write("Colonnes de user_df avant réorganisation :", user_df[continuous_cols].columns.tolist())
+
+    # Réorganiser les colonnes de user_df pour correspondre à celles du scaler
+    user_df[continuous_cols] = user_df[continuous_cols][scaler_ref.feature_names_in_]
+
     # Scaling des colonnes continues uniquement
     user_continuous_scaled = scaler_ref.transform(user_df[continuous_cols])
     user_binary = user_df[binary_cols].values
