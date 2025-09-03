@@ -188,22 +188,28 @@ if 'reponses_df' in st.session_state:
         X_user = user_df_regression.reindex(columns=cols_needed, fill_value=0).astype(float)
         predicted_scores[dep_var] = float(model.predict(X_user)[0])
 
+    # Normaliser les scores prédits sur une échelle de 0 à 10
+    min_possible_score = 0
+    max_possible_score = 10
+
+    normalized_predicted_scores = {}
+    for dep_var, score in predicted_scores.items():
+        # Normaliser le score prédit sur une échelle de 0 à 10
+        normalized_score = max(min_possible_score, min(max_possible_score, score))
+        normalized_predicted_scores[dep_var] = normalized_score
+
     # Ajouter une valeur pour fermer le radar
-    predicted_scores_list = list(predicted_scores.values())
-    predicted_scores_list.append(predicted_scores_list[0])
+    normalized_predicted_scores_list = list(normalized_predicted_scores.values())
+    normalized_predicted_scores_list.append(normalized_predicted_scores_list[0])
 
     # Noms des variables pour l'affichage
-    dep_var_labels = [var.replace('_', ' ') for var in predicted_scores.keys()]
+    dep_var_labels = [var.replace('_', ' ') for var in normalized_predicted_scores.keys()]
     dep_var_labels.append(dep_var_labels[0])
 
-    # Déterminer la plage maximale pour le radar chart
-    max_score = max(predicted_scores_list)
-    range_max = max_score * 1.2  # Ajouter 20% de marge pour une meilleure visualisation
-
-    # Radar chart des scores prédits (valeurs brutes)
+    # Radar chart des scores prédits (normalisés sur 0-10)
     fig_scores = go.Figure()
     fig_scores.add_trace(go.Scatterpolar(
-        r=predicted_scores_list,
+        r=normalized_predicted_scores_list,
         theta=dep_var_labels,
         fill='toself',
         name='Vos scores prédits',
@@ -214,13 +220,13 @@ if 'reponses_df' in st.session_state:
         polar=dict(
             radialaxis=dict(
                 visible=True,
-                range=[0, range_max],
+                range=[0, 10],
                 tickfont=dict(color='#9370DB'),
                 gridcolor='#E6E6FA'
             ),
             angularaxis=dict(tickfont=dict(color='#9370DB'))
         ),
-        title='Scores de bien-être (valeurs brutes)',
+        title='Scores de bien-être (0-10)',
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
