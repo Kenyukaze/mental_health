@@ -18,7 +18,6 @@ st.markdown(
     .main-title { color: #9370DB; text-align: center; font-size: 2.5em; margin-bottom: 0.5em; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
     .result-container { background-color: rgba(248,248,255,0.9); border-radius: 15px; padding: 30px; margin: 30px auto; max-width: 800px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: 1px solid #E6E6FA; text-align:center; }
     .cluster-title { color:#9370DB; font-size:1.8em; font-weight:bold; margin-bottom:20px; }
-    .cluster-text { color:#6A5ACD; font-size:1.2em; line-height:1.6; margin-bottom:20px; }
     .interpretation { color:#6A5ACD; font-size:1.3em; font-weight:500; margin-top:20px; padding:20px; background-color: rgba(147,112,219,0.1); border-radius:10px; border-left:4px solid #9370DB; }
     .cluster-image { text-align:center; margin-top:40px; margin-bottom:40px; }
     .cluster-image img { width:700px; height:auto; display:block; margin-left:auto; margin-right:auto; }
@@ -56,9 +55,7 @@ if 'reponses_df' in st.session_state:
     if os.path.exists(scaler_path) and os.path.exists(model_path):
         scaler_ref = joblib.load(scaler_path)
         kmeans = joblib.load(model_path)
-        # Vérifier que le scaler a été entraîné avec les bonnes colonnes
         if set(scaler_ref.feature_names_in_) != set(continuous_cols):
-            st.warning("Le scaler existant a été entraîné avec des colonnes différentes. Réentraînement...")
             scaler_ref = StandardScaler()
             X_ref_continuous = df_ref[continuous_cols]
             X_ref_continuous_scaled = scaler_ref.fit_transform(X_ref_continuous)
@@ -69,7 +66,6 @@ if 'reponses_df' in st.session_state:
             joblib.dump(scaler_ref, scaler_path)
             joblib.dump(kmeans, model_path)
     else:
-        st.info("Entraînement initial du scaler et du modèle...")
         scaler_ref = StandardScaler()
         X_ref_continuous = df_ref[continuous_cols]
         X_ref_continuous_scaled = scaler_ref.fit_transform(X_ref_continuous)
@@ -104,40 +100,15 @@ if 'reponses_df' in st.session_state:
         user_data['Family_History_Mental_Illness'] = [1 if st.session_state.reponses_df.iloc[0]['Q6'] <= 5 else 0]
 
     user_df = pd.DataFrame(user_data)[continuous_cols + binary_cols]
-
-    # Debug: Afficher les données avant scaling
-    st.subheader("🔍 Debugging")
-    st.write("Colonnes du scaler :", scaler_ref.feature_names_in_)
-    st.write("Colonnes continues de user_df :", user_df[continuous_cols].columns.tolist())
-
-    # Réorganiser user_df[continuous_cols] pour correspondre à l'ordre du scaler
     user_df[continuous_cols] = user_df[continuous_cols][scaler_ref.feature_names_in_]
 
-    # Scaling des colonnes continues uniquement
+    # Scaling et clustering
     user_continuous_scaled = scaler_ref.transform(user_df[continuous_cols])
     user_binary = user_df[binary_cols].values
     user_data_scaled = np.hstack((user_continuous_scaled, user_binary))
-
-    # Debug: Vérifier les shapes
-    st.write("Shape user_continuous_scaled:", user_continuous_scaled.shape)
-    st.write("Shape user_binary:", user_binary.shape)
-    st.write("Shape user_data_scaled:", user_data_scaled.shape)
-    st.write("Nb colonnes attendues:", len(continuous_cols + binary_cols))
-
-    # Création du DataFrame
-    df_scaled = pd.DataFrame(user_data_scaled, columns=continuous_cols + binary_cols)
-    st.write("User data après scaling :", df_scaled)
-
-    # Cluster utilisateur
     user_cluster = kmeans.predict(user_data_scaled.reshape(1, -1))[0]
-    st.write("Cluster prédit :", user_cluster)
 
-    # Clustering sur df_ref
-    X_ref_continuous_scaled = scaler_ref.transform(df_ref[continuous_cols])
-    X_ref_scaled = np.hstack((X_ref_continuous_scaled, df_ref[binary_cols].values))
-    df_ref['cluster'] = kmeans.predict(X_ref_scaled)
-    st.write("Répartition clusters df_ref :", df_ref['cluster'].value_counts())
-
+    # Affichage du groupe
     st.markdown(f'<p class="cluster-title">Vous appartenez au groupe : {user_cluster + 1}</p>', unsafe_allow_html=True)
 
     # Interprétation clusters
@@ -184,22 +155,6 @@ if 'reponses_df' in st.session_state:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    # PCA clusters
-    pca = PCA(n_components=2)
-    pca_result = pca.fit_transform(X_ref_scaled)
-    df_ref['pca1'] = pca_result[:, 0]
-    df_ref['pca2'] = pca_result[:, 1]
-    user_pca = pca.transform(user_data_scaled.reshape(1, -1))
-
-    fig_pca = px.scatter(df_ref, x="pca1", y="pca2",
-                         color=df_ref['cluster'].astype(str),
-                         title="Visualisation des clusters (PCA 2D)",
-                         opacity=0.6, width=700, height=500,
-                         color_discrete_sequence=px.colors.qualitative.Set2)
-    fig_pca.add_scatter(x=[user_pca[0, 0]], y=[user_pca[0, 1]], mode="markers",
-                        marker=dict(size=15, color="red", symbol="x"), name="Utilisateur")
-    st.plotly_chart(fig_pca, use_container_width=True)
-
     # Image cluster
     cluster_images = {0: "Cluster_1.png", 1: "Cluster_2.png", 2: "Cluster_3.png", 3: "Cluster_4.png", 4: "Cluster_5.png"}
     script_dir = os.path.dirname(__file__)
@@ -210,11 +165,6 @@ if 'reponses_df' in st.session_state:
         st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
         st.image(image_filename)
         st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.warning(f"L'image {image_filename} est introuvable.")
-        st.write("Chemin images:", images_dir)
-        st.write("Fichiers disponibles :", os.listdir(images_dir) if os.path.exists(images_dir) else "Dossier introuvable")
-        st.write("Dossier courant :", os.listdir(os.path.dirname(script_dir)))
 
     st.markdown('</div>', unsafe_allow_html=True)
 else:
