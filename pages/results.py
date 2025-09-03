@@ -29,7 +29,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Titre principal
+# Titre_principal
 st.markdown('<p class="main-title">Vos Résultats</p>', unsafe_allow_html=True)
 
 # Mapping questions -> variables
