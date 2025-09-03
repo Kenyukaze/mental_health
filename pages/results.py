@@ -168,7 +168,6 @@ if 'reponses_df' in st.session_state:
         st.image(image_filename)
         st.markdown('</div>', unsafe_allow_html=True)
 
-  # =============================================
 # NOUVEAU : Radar Chart des scores prédits
 # =============================================
 st.markdown('<p class="regression-title">Analyse des scores de bien-être</p>', unsafe_allow_html=True)
@@ -191,10 +190,44 @@ for dep_var in dependent_vars:
     if dep_var in df_encoded.columns:
         models[dep_var] = run_regression(df_encoded, dep_var, ['const'] + independent_vars)
 
-# Préparer les données de l'utilisateur avec les bonnes colonnes
-user_df_for_prediction = pd.DataFrame([user_data])
+# Préparer les données de l'utilisateur
+user_data = {col: [0] for col in continuous_cols + binary_cols}
+
+# Calcul de l'âge utilisateur
+if 'profile_info' in st.session_state:
+    date_naissance = st.session_state.profile_info['date_naissance']
+    age = datetime.now().year - date_naissance.year - ((datetime.now().month, datetime.now().day) < (date_naissance.month, date_naissance.day))
+else:
+    age = 25
+age_normalise = int(((age - 18) / (99 - 18)) * 9) + 1
+user_data['Age'] = [age_normalise]
+
+# Remplir les données utilisateur à partir des réponses
+for q, response in st.session_state.reponses_df.iloc[0].items():
+    if q in question_mapping:
+        val = response
+        if question_mapping[q]['inverse']:
+            val = 10 - val
+        user_data[question_mapping[q]['variable']] = [val]
+
+# Corriger la logique pour Family_History_Mental_Illness
+if 'Q6' in st.session_state.reponses_df.columns:
+    user_data['Family_History_Mental_Illness'] = [1 if st.session_state.reponses_df.iloc[0]['Q6'] <= 5 else 0]
+
+# Préparer les données de l'utilisateur pour la prédiction
+user_df_for_prediction = pd.DataFrame(user_data)
+
+# Vérifier que les colonnes de user_df_for_prediction sont dans le bon ordre
+expected_columns = ['const'] + independent_vars
 user_df_for_prediction = sm.add_constant(user_df_for_prediction)
-user_df_for_prediction = user_df_for_prediction[['const'] + independent_vars]  # Assurez-vous que les colonnes sont dans le bon ordre
+
+# Vérifier que toutes les colonnes nécessaires sont présentes
+for col in independent_vars:
+    if col not in user_df_for_prediction.columns:
+        user_df_for_prediction[col] = 0  # ou une autre valeur par défaut
+
+# Réorganiser les colonnes pour qu'elles correspondent à l'ordre attendu
+user_df_for_prediction = user_df_for_prediction[expected_columns]
 
 # Prédire les scores pour l'utilisateur
 predicted_scores = {}
@@ -212,7 +245,7 @@ fig_scores = go.Figure()
 # Ajouter les scores normalisés au radar chart
 fig_scores.add_trace(go.Scatterpolar(
     r=list(normalized_scores.values()) + [list(normalized_scores.values())[0]],  # Fermer le polygone
-    theta=list(normalized_scores.keys()) + [list(normalized_scores.keys())[0]],  # Fermer le polygone
+    theta=[var.replace('_', ' ') for var in normalized_scores.keys()] + [var.replace('_', ' ') for var in normalized_scores.keys()][:1],  # Fermer le polygone
     fill='toself',
     name='Vos scores prédits',
     line_color='#9370DB',
