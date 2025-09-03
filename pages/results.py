@@ -100,10 +100,8 @@ if 'reponses_df' in st.session_state:
             if question_mapping[q]['inverse']:
                 val = 10 - val
             user_data[question_mapping[q]['variable']] = [val]
-
     if 'Q6' in st.session_state.reponses_df.columns:
         user_data['Family_History_Mental_Illness'] = [1 if st.session_state.reponses_df.iloc[0]['Q6'] <= 5 else 0]
-
     user_df = pd.DataFrame(user_data)[continuous_cols + binary_cols]
     user_continuous_scaled = scaler_ref.transform(user_df[continuous_cols])
     user_binary = user_df[binary_cols].values
@@ -154,6 +152,82 @@ if 'reponses_df' in st.session_state:
         title=dict(text="Radar Chart de vos indicateurs", font=dict(size=14, color='#9370DB'), x=0.38)
     )
 
+    # =====================================================
+    # Régression et radar chart des scores prédits
+    # =====================================================
+    st.markdown('<p class="regression-title">Analyse des scores de bien-être</p>', unsafe_allow_html=True)
+    df_encoded = sm.add_constant(df_ref[independent_vars + dependent_vars].dropna())
+
+    def run_regression(df, dependent_var, independent_vars):
+        X = df[independent_vars].astype(float)
+        y = df[dependent_var].astype(float)
+        return sm.OLS(y, X).fit()
+
+    models = {}
+    for dep_var in dependent_vars:
+        if dep_var in df_encoded.columns:
+            models[dep_var] = run_regression(df_encoded, dep_var, ['const'] + independent_vars)
+
+    # 🔹 Construire un DataFrame utilisateur spécifique à la régression
+    user_data_reg = {}
+    user_data_reg['Age'] = age_normalise
+    for q, response in st.session_state.reponses_df.iloc[0].items():
+        if q in question_mapping:
+            val = response
+            if question_mapping[q]['inverse']:
+                val = 10 - val
+            user_data_reg[question_mapping[q]['variable']] = val
+    if 'Q6' in st.session_state.reponses_df.columns:
+        user_data_reg['Family_History_Mental_Illness'] = 1 if st.session_state.reponses_df.iloc[0]['Q6'] <= 5 else 0
+    expected_columns = ['const'] + independent_vars
+    user_df_regression = pd.DataFrame([user_data_reg])
+    user_df_regression = sm.add_constant(user_df_regression, has_constant='add')
+    user_df_regression = user_df_regression.reindex(columns=expected_columns, fill_value=0)
+
+    # 🔹 Prédire les scores
+    predicted_scores = {}
+    for dep_var, model in models.items():
+        cols_needed = list(model.params.index)
+        X_user = user_df_regression.reindex(columns=cols_needed, fill_value=0).astype(float)
+        predicted_scores[dep_var] = float(model.predict(X_user)[0])
+
+    min_score = min(predicted_scores.values())
+    max_score = max(predicted_scores.values())
+    if max_score == min_score:
+        normalized_scores = {k: 0.5 for k in predicted_scores}
+    else:
+        normalized_scores = {k: (v - min_score) / (max_score - min_score) for k, v in predicted_scores.items()}
+
+    # 🔹 Radar chart des scores prédits
+    fig_scores = go.Figure()
+    fig_scores.add_trace(go.Scatterpolar(
+        r=list(normalized_scores.values()) + [list(normalized_scores.values())[0]],
+        theta=[var.replace('_', ' ') for var in normalized_scores.keys()] +
+              [list(normalized_scores.keys())[0].replace('_', ' ')],
+        fill='toself',
+        name='Vos scores prédits',
+        line_color='#9370DB',
+        fillcolor='rgba(147,112,219,0.1)'
+    ))
+    fig_scores.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 1],
+                                   tickfont=dict(color='#9370DB'),
+                                   gridcolor='#E6E6FA'),
+                   angularaxis=dict(tickfont=dict(color='#9370DB'))),
+        title='Scores de bien-être (normalisés)',
+        showlegend=False,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=50, r=50, b=50, t=50),
+    )
+
+    # 🔹 Affichage côte à côte des deux radars
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(fig, use_container_width=True)
+    with col2:
+        st.plotly_chart(fig_scores, use_container_width=True)
+
     # Image cluster
     cluster_images = {0: "Cluster_1.png", 1: "Cluster_2.png", 2: "Cluster_3.png", 3: "Cluster_4.png", 4: "Cluster_5.png"}
     script_dir = os.path.dirname(__file__)
@@ -163,83 +237,3 @@ if 'reponses_df' in st.session_state:
         st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
         st.image(image_filename)
         st.markdown('</div>', unsafe_allow_html=True)
-
-# =====================================================
-# Régression et radar chart des scores prédits
-# =====================================================
-st.markdown('<p class="regression-title">Analyse des scores de bien-être</p>', unsafe_allow_html=True)
-
-df_encoded = sm.add_constant(df_ref[independent_vars + dependent_vars].dropna())
-
-def run_regression(df, dependent_var, independent_vars):
-    X = df[independent_vars].astype(float)
-    y = df[dependent_var].astype(float)
-    return sm.OLS(y, X).fit()
-
-models = {}
-for dep_var in dependent_vars:
-    if dep_var in df_encoded.columns:
-        models[dep_var] = run_regression(df_encoded, dep_var, ['const'] + independent_vars)
-
-# 🔹 Construire un DataFrame utilisateur spécifique à la régression
-user_data_reg = {}
-user_data_reg['Age'] = age_normalise
-for q, response in st.session_state.reponses_df.iloc[0].items():
-    if q in question_mapping:
-        val = response
-        if question_mapping[q]['inverse']:
-            val = 10 - val
-        user_data_reg[question_mapping[q]['variable']] = val
-if 'Q6' in st.session_state.reponses_df.columns:
-    user_data_reg['Family_History_Mental_Illness'] = 1 if st.session_state.reponses_df.iloc[0]['Q6'] <= 5 else 0
-
-expected_columns = ['const'] + independent_vars
-user_df_regression = pd.DataFrame([user_data_reg])
-user_df_regression = sm.add_constant(user_df_regression, has_constant='add')
-user_df_regression = user_df_regression.reindex(columns=expected_columns, fill_value=0)
-
-# 🔹 Prédire les scores
-predicted_scores = {}
-for dep_var, model in models.items():
-    cols_needed = list(model.params.index)
-    X_user = user_df_regression.reindex(columns=cols_needed, fill_value=0).astype(float)
-    predicted_scores[dep_var] = float(model.predict(X_user)[0])
-
-min_score = min(predicted_scores.values())
-max_score = max(predicted_scores.values())
-if max_score == min_score:
-    normalized_scores = {k: 0.5 for k in predicted_scores}
-else:
-    normalized_scores = {k: (v - min_score) / (max_score - min_score) for k, v in predicted_scores.items()}
-
-# 🔹 Radar chart des scores prédits
-fig_scores = go.Figure()
-fig_scores.add_trace(go.Scatterpolar(
-    r=list(normalized_scores.values()) + [list(normalized_scores.values())[0]],
-    theta=[var.replace('_', ' ') for var in normalized_scores.keys()] +
-          [list(normalized_scores.keys())[0].replace('_', ' ')],
-    fill='toself',
-    name='Vos scores prédits',
-    line_color='#9370DB',
-    fillcolor='rgba(147,112,219,0.1)'
-))
-fig_scores.update_layout(
-    polar=dict(radialaxis=dict(visible=True, range=[0, 1],
-                               tickfont=dict(color='#9370DB'),
-                               gridcolor='#E6E6FA'),
-               angularaxis=dict(tickfont=dict(color='#9370DB'))),
-    title='Scores de bien-être (normalisés)',
-    showlegend=False,
-    paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)',
-    margin=dict(l=50, r=50, b=50, t=50),
-)
-
-# =====================================================
-# 🔹 Affichage côte à côte des deux radars
-# =====================================================
-col1, col2 = st.columns(2)
-with col1:
-    st.plotly_chart(fig, use_container_width=True)
-with col2:
-    st.plotly_chart(fig_scores, use_container_width=True)
