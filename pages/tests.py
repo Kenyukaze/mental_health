@@ -181,36 +181,29 @@ if 'reponses_df' in st.session_state:
     user_df_regression = sm.add_constant(user_df_regression, has_constant='add')
     user_df_regression = user_df_regression.reindex(columns=expected_columns, fill_value=0)
 
-    # Prédire les scores
+    # Prédire les scores (valeurs brutes)
     predicted_scores = {}
     for dep_var, model in models.items():
         cols_needed = list(model.params.index)
         X_user = user_df_regression.reindex(columns=cols_needed, fill_value=0).astype(float)
         predicted_scores[dep_var] = float(model.predict(X_user)[0])
 
-    # Normaliser les scores par rapport à df_ref (moyenne=0, écart-type=1)
-    df_ref_scores = df_ref[dependent_vars].dropna()
-    normalized_scores = {}
-    for dep_var in predicted_scores:
-        mean = df_ref_scores[dep_var].mean()
-        std = df_ref_scores[dep_var].std()
-        if std == 0:
-            normalized_scores[dep_var] = 0.5
-        else:
-            normalized_scores[dep_var] = (predicted_scores[dep_var] - mean) / std
-
     # Ajouter une valeur pour fermer le radar
-    normalized_scores_list = list(normalized_scores.values())
-    normalized_scores_list.append(normalized_scores_list[0])
+    predicted_scores_list = list(predicted_scores.values())
+    predicted_scores_list.append(predicted_scores_list[0])
 
     # Noms des variables pour l'affichage
-    dep_var_labels = [var.replace('_', ' ') for var in normalized_scores.keys()]
+    dep_var_labels = [var.replace('_', ' ') for var in predicted_scores.keys()]
     dep_var_labels.append(dep_var_labels[0])
 
-    # Radar chart des scores prédits (normalisés)
+    # Déterminer la plage maximale pour le radar chart
+    max_score = max(predicted_scores_list)
+    range_max = max_score * 1.2  # Ajouter 20% de marge pour une meilleure visualisation
+
+    # Radar chart des scores prédits (valeurs brutes)
     fig_scores = go.Figure()
     fig_scores.add_trace(go.Scatterpolar(
-        r=normalized_scores_list,
+        r=predicted_scores_list,
         theta=dep_var_labels,
         fill='toself',
         name='Vos scores prédits',
@@ -221,13 +214,13 @@ if 'reponses_df' in st.session_state:
         polar=dict(
             radialaxis=dict(
                 visible=True,
-                range=[-3, 3],
+                range=[0, range_max],
                 tickfont=dict(color='#9370DB'),
                 gridcolor='#E6E6FA'
             ),
             angularaxis=dict(tickfont=dict(color='#9370DB'))
         ),
-        title='Scores de bien-être (normalisés par rapport à la population)',
+        title='Scores de bien-être (valeurs brutes)',
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
