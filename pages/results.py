@@ -15,7 +15,7 @@ st.markdown(
     """
     <style>
     .stApp { background: linear-gradient(to bottom, #E6E6FA, #FFFFFF); }
-    .main-title { color: #9370DB; text-align: center; font-size: 8.5em; margin-bottom: 0.5em; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+    .main-title { color: #9370DB; text-align: center; font-size: 3.5em; margin-bottom: 0.5em; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
     .result-container { background-color: rgba(248,248,255,0.9); border-radius: 15px; padding: 30px; margin: 30px auto; max-width: 800px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: 1px solid #E6E6FA; text-align:center; }
     .cluster-title { color:#9370DB; font-size:1.8em; font-weight:bold; margin-bottom:20px; }
     .interpretation { color:#6A5ACD; font-size:1.3em; font-weight:500; margin-top:20px; padding:20px; background-color: rgba(147,112,219,0.1); border-radius:10px; border-left:4px solid #9370DB; }
@@ -25,6 +25,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 # Titre principal
 st.markdown('<p class="main-title">Vos Résultats</p>', unsafe_allow_html=True)
