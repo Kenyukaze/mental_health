@@ -102,11 +102,11 @@ elif st.session_state.reponse_q6 == 0:
 # Boutons exclusifs Vrai / Faux
 c_sp, c_vrai, c_faux, c_sp2 = st.columns([1, 1, 1, 1])
 with c_vrai:
-    if st.button("Vrai", key="q6_vrai", use_container_width=True):
+    if st.button("Oui", key="q6_vrai", use_container_width=True):
         st.session_state.reponse_q6 = 1
         st.rerun()  # Forcer la réexécution pour appliquer le style
 with c_faux:
-    if st.button("Faux", key="q6_faux", use_container_width=True):
+    if st.button("Non", key="q6_faux", use_container_width=True):
         st.session_state.reponse_q6 = 0
         st.rerun()  # Forcer la réexécution pour appliquer le style
 
