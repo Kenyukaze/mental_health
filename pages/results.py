@@ -9,6 +9,8 @@ import os
 from sklearn.decomposition import PCA
 import plotly.express as px
 import plotly.graph_objects as go
+import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 # Style CSS
 st.markdown(
@@ -21,11 +23,11 @@ st.markdown(
     .interpretation { color:#6A5ACD; font-size:1.3em; font-weight:500; margin-top:20px; padding:20px; background-color: rgba(147,112,219,0.1); border-radius:10px; border-left:4px solid #9370DB; }
     .cluster-image { text-align:center; margin-top:40px; margin-bottom:40px; }
     .cluster-image img { width:700px; height:auto; display:block; margin-left:auto; margin-right:auto; }
+    .regression-title { color:#9370DB; font-size:1.5em; font-weight:bold; margin-top:30px; margin-bottom:10px; }
     </style>
     """,
     unsafe_allow_html=True
 )
-
 
 # Titre principal
 st.markdown('<p class="main-title">Vos Résultats</p>', unsafe_allow_html=True)
@@ -48,11 +50,13 @@ if 'reponses_df' in st.session_state:
     # Charger données référence et modèles
     df_ref = pd.read_csv("df_clusters.csv")
     continuous_cols = ['Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress', 'Work_Stress', 'Self_Esteem_Score', 'Loneliness_Score']
+    dependent_vars = ['Anxiety_Score', 'Depression_Score', 'Stress_Level']
     binary_cols = ['Family_History_Mental_Illness']
-    scaler_path = 'scaler.save'
-    model_path = 'kmeans_model.save'
+    independent_vars = continuous_cols + binary_cols
 
     # Vérifier et recharger/réentraîner le scaler et le modèle si nécessaire
+    scaler_path = 'scaler.save'
+    model_path = 'kmeans_model.save'
     if os.path.exists(scaler_path) and os.path.exists(model_path):
         scaler_ref = joblib.load(scaler_path)
         kmeans = joblib.load(model_path)
@@ -88,7 +92,6 @@ if 'reponses_df' in st.session_state:
     # Préparer données utilisateur
     user_data = {col: [0] for col in continuous_cols + binary_cols}
     user_data['Age'] = [age_normalise]
-
     for q, response in st.session_state.reponses_df.iloc[0].items():
         if q in question_mapping:
             val = response
@@ -122,7 +125,7 @@ if 'reponses_df' in st.session_state:
     }
     st.markdown(f'<div class="interpretation">{interpretations.get(user_cluster, "Interprétation non disponible")}</div>', unsafe_allow_html=True)
 
-    # Radar Chart
+    # Radar Chart utilisateur
     features = continuous_cols + binary_cols
     user_values = user_df.iloc[0].values.tolist()
     user_values.append(user_values[0])
@@ -133,7 +136,6 @@ if 'reponses_df' in st.session_state:
     }
     features_display = [feature_labels[f] for f in features]
     features_display.append(features_display[0])
-
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
         r=user_values,
@@ -161,12 +163,71 @@ if 'reponses_df' in st.session_state:
     script_dir = os.path.dirname(__file__)
     images_dir = os.path.join(os.path.dirname(script_dir), 'images')
     image_filename = os.path.join(images_dir, cluster_images.get(user_cluster, 'Cluster_1.png'))
-
     if os.path.exists(image_filename):
         st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
         st.image(image_filename)
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # =============================================
+    # NOUVEAU : Régressions et Radar Chart des coefficients
+    # =============================================
+
+    st.markdown('<p class="regression-title">Analyse des facteurs influençant votre bien-être</p>', unsafe_allow_html=True)
+
+    # Ajouter une constante pour la régression
+    df_encoded = sm.add_constant(df_ref[independent_vars + dependent_vars].dropna())
+
+    # Fonction pour exécuter la régression linéaire multivariée
+    def run_regression(df, dependent_var, independent_vars):
+        X = df[independent_vars]
+        y = df[dependent_var]
+        X = X.astype(float)
+        y = y.astype(float)
+        model = sm.OLS(y, X).fit()
+        return model
+
+    # Exécuter la régression pour chaque variable dépendante
+    models = {}
+    for dep_var in dependent_vars:
+        if dep_var in df_encoded.columns:
+            models[dep_var] = run_regression(df_encoded, dep_var, independent_vars)
+
+    # Préparer les données pour le radar chart des coefficients
+    radar_data = []
+    for dep_var, model in models.items():
+        coefs = model.params[1:]  # Exclure l'intercept
+        radar_data.append(coefs.tolist())
+
+    # Normaliser les coefficients pour le radar chart
+    max_val = max(abs(coef) for data in radar_data for coef in data)
+    radar_data_normalized = [[coef/max_val for coef in data] for data in radar_data]
+
+    # Radar Chart des coefficients
+    fig_coef = go.Figure()
+    for i, dep_var in enumerate(dependent_vars):
+        fig_coef.add_trace(go.Scatterpolar(
+            r=radar_data_normalized[i],
+            theta=features_display[:-1],  # Retirer le dernier élément (dupliqué)
+            fill='toself',
+            name=dep_var.replace('_', ' '),
+            line_color=px.colors.qualitative.Plotly[i],
+            fillcolor=f'rgba({i*50}, {i*100}, {i*150}, 0.1)',
+            hovertemplate='%{theta}: %{r:.2f}<extra></extra>'
+        ))
+
+    fig_coef.update_layout(
+        polar=dict(radialaxis=dict(range=[-1, 1], tickfont=dict(color='#6A5ACD'), gridcolor='#E6E6FA'),
+                   angularaxis=dict(direction='clockwise', tickfont=dict(color='#6A5ACD')),
+                   bgcolor='rgba(0,0,0,0)'),
+        showlegend=True,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=50, r=50, b=50, t=50),
+        title=dict(text="Impact des facteurs sur vos scores (coefficients normalisés)", font=dict(size=14, color='#6A5ACD'), x=0.38)
+    )
+    st.plotly_chart(fig_coef, use_container_width=True)
+
     st.markdown('</div>', unsafe_allow_html=True)
+
 else:
     st.markdown('<p style="color:#6A5ACD;font-size:1.2em;text-align:center;">Aucune réponse enregistrée.</p>', unsafe_allow_html=True)
