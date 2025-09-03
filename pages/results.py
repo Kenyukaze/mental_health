@@ -29,7 +29,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Titre_principal
+# Titre principal
 st.markdown('<p class="main-title">Vos Résultats</p>', unsafe_allow_html=True)
 
 # Mapping questions -> variables
@@ -169,10 +169,9 @@ if 'reponses_df' in st.session_state:
         st.markdown('</div>', unsafe_allow_html=True)
 
     # =============================================
-    # NOUVEAU : Régressions et Radar Chart des coefficients
+    # NOUVEAU : Radar Chart des scores prédits
     # =============================================
-
-    st.markdown('<p class="regression-title">Analyse des facteurs influençant votre bien-être</p>', unsafe_allow_html=True)
+    st.markdown('<p class="regression-title">Analyse des scores de bien-être</p>', unsafe_allow_html=True)
 
     # Ajouter une constante pour la régression
     df_encoded = sm.add_constant(df_ref[independent_vars + dependent_vars].dropna())
@@ -192,40 +191,44 @@ if 'reponses_df' in st.session_state:
         if dep_var in df_encoded.columns:
             models[dep_var] = run_regression(df_encoded, dep_var, independent_vars)
 
-    # Préparer les données pour le radar chart des coefficients
-    radar_data = []
+    # Prédire les scores pour l'utilisateur
+    user_data_with_const = sm.add_constant(pd.DataFrame([user_data]))
+    predicted_scores = {}
     for dep_var, model in models.items():
-        coefs = model.params[1:]  # Exclure l'intercept
-        radar_data.append(coefs.tolist())
+        predicted_scores[dep_var] = model.predict(user_data_with_const)[0]
 
-    # Normaliser les coefficients pour le radar chart
-    max_val = max(abs(coef) for data in radar_data for coef in data)
-    radar_data_normalized = [[coef/max_val for coef in data] for data in radar_data]
+    # Normaliser les scores entre 0 et 1
+    min_score = min(predicted_scores.values())
+    max_score = max(predicted_scores.values())
+    normalized_scores = {k: (v - min_score) / (max_score - min_score) for k, v in predicted_scores.items()}
 
-    # Radar Chart des coefficients
-    fig_coef = go.Figure()
-    for i, dep_var in enumerate(dependent_vars):
-        fig_coef.add_trace(go.Scatterpolar(
-            r=radar_data_normalized[i],
-            theta=features_display[:-1],  # Retirer le dernier élément (dupliqué)
-            fill='toself',
-            name=dep_var.replace('_', ' '),
-            line_color=px.colors.qualitative.Plotly[i],
-            fillcolor=f'rgba({i*50}, {i*100}, {i*150}, 0.1)',
-            hovertemplate='%{theta}: %{r:.2f}<extra></extra>'
-        ))
+    # Radar Chart des scores prédits
+    fig_scores = go.Figure()
 
-    fig_coef.update_layout(
-        polar=dict(radialaxis=dict(range=[-1, 1], tickfont=dict(color='#6A5ACD'), gridcolor='#E6E6FA'),
-                   angularaxis=dict(direction='clockwise', tickfont=dict(color='#6A5ACD')),
-                   bgcolor='rgba(0,0,0,0)'),
-        showlegend=True,
+    # Ajouter les scores normalisés au radar chart
+    fig_scores.add_trace(go.Scatterpolar(
+        r=list(normalized_scores.values()) + [list(normalized_scores.values())[0]],  # Fermer le polygone
+        theta=list(normalized_scores.keys()) + [list(normalized_scores.keys())[0]],  # Fermer le polygone
+        fill='toself',
+        name='Vos scores prédits',
+        line_color='#9370DB',
+        fillcolor='rgba(147,112,219,0.1)'
+    ))
+
+    fig_scores.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 1]
+            )),
+        title='Scores de bien-être (normalisés)',
+        showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=50, r=50, b=50, t=50),
-        title=dict(text="Impact des facteurs sur vos scores (coefficients normalisés)", font=dict(size=14, color='#6A5ACD'), x=0.38)
     )
-    st.plotly_chart(fig_coef, use_container_width=True)
+
+    st.plotly_chart(fig_scores, use_container_width=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
