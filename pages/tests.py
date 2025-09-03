@@ -19,7 +19,6 @@ st.markdown(
     .cluster-title { color:#9370DB; font-size:1.8em; font-weight:bold; margin-bottom:20px; }
     .interpretation { color:#6A5ACD; font-size:1.3em; font-weight:500; margin-top:20px; padding:20px; background-color: rgba(147,112,219,0.1); border-radius:10px; border-left:4px solid #9370DB; }
     .cluster-image { text-align:center; margin-top:40px; margin-bottom:40px; }
-    .cluster-image img { width:700px; height:auto; display:block; margin-left:auto; margin-right:auto; }
     .regression-title { color:#9370DB; font-size:1.5em; font-weight:bold; margin-top:30px; margin-bottom:10px; }
     </style>
     """,
@@ -107,6 +106,7 @@ if 'reponses_df' in st.session_state:
 
     # Affichage cluster
     st.markdown(f'<p class="cluster-title">Vous appartenez au groupe : {user_cluster + 1}</p>', unsafe_allow_html=True)
+
     interpretations = {
         0: "Votre profil indique un bien-être général élevé.",
         1: "Votre profil indique un bien-être moyen avec quelques points à améliorer.",
@@ -128,6 +128,7 @@ if 'reponses_df' in st.session_state:
     }
     features_display = [feature_labels[f] for f in features]
     features_display.append(features_display[0])
+
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
         r=user_values,
@@ -149,103 +150,21 @@ if 'reponses_df' in st.session_state:
         title=dict(text="Radar Chart de vos indicateurs", font=dict(size=14, color='#9370DB'), x=0.38)
     )
 
-    # =====================================================
-    # Régression et radar chart des scores prédits
-    # =====================================================
-    st.markdown('<p class="regression-title">Analyse des scores de bien-être</p>', unsafe_allow_html=True)
-    df_encoded = sm.add_constant(df_ref[independent_vars + dependent_vars].dropna())
-
-    def run_regression(df, dependent_var, independent_vars):
-        X = df[independent_vars].astype(float)
-        y = df[dependent_var].astype(float)
-        return sm.OLS(y, X).fit()
-
-    models = {}
-    for dep_var in dependent_vars:
-        if dep_var in df_encoded.columns:
-            models[dep_var] = run_regression(df_encoded, dep_var, ['const'] + independent_vars)
-
-    # Construire un DataFrame utilisateur spécifique à la régression
-    user_data_reg = {}
-    user_data_reg['Age'] = age_normalise
-    for q, response in st.session_state.reponses_df.iloc[0].items():
-        if q in question_mapping:
-            val = response
-            if question_mapping[q]['inverse']:
-                val = 10 - val
-            user_data_reg[question_mapping[q]['variable']] = val
-    if 'Q6' in st.session_state.reponses_df.columns:
-        user_data_reg['Family_History_Mental_Illness'] = 1 if st.session_state.reponses_df.iloc[0]['Q6'] <= 5 else 0
-    expected_columns = ['const'] + independent_vars
-    user_df_regression = pd.DataFrame([user_data_reg])
-    user_df_regression = sm.add_constant(user_df_regression, has_constant='add')
-    user_df_regression = user_df_regression.reindex(columns=expected_columns, fill_value=0)
-
-    # Prédire les scores (valeurs brutes)
-    predicted_scores = {}
-    for dep_var, model in models.items():
-        cols_needed = list(model.params.index)
-        X_user = user_df_regression.reindex(columns=cols_needed, fill_value=0).astype(float)
-        predicted_scores[dep_var] = float(model.predict(X_user)[0])
-
-    # Normaliser les scores prédits sur une échelle de 0 à 10
-    min_possible_score = 0
-    max_possible_score = 10
-
-    normalized_predicted_scores = {}
-    for dep_var, score in predicted_scores.items():
-        # Normaliser le score prédit sur une échelle de 0 à 10
-        normalized_score = max(min_possible_score, min(max_possible_score, score))
-        normalized_predicted_scores[dep_var] = normalized_score
-
-    # Ajouter une valeur pour fermer le radar
-    normalized_predicted_scores_list = list(normalized_predicted_scores.values())
-    normalized_predicted_scores_list.append(normalized_predicted_scores_list[0])
-
-    # Noms des variables pour l'affichage
-    dep_var_labels = [var.replace('_', ' ') for var in normalized_predicted_scores.keys()]
-    dep_var_labels.append(dep_var_labels[0])
-
-    # Radar chart des scores prédits (normalisés sur 0-10)
-    fig_scores = go.Figure()
-    fig_scores.add_trace(go.Scatterpolar(
-        r=normalized_predicted_scores_list,
-        theta=dep_var_labels,
-        fill='toself',
-        name='Vos scores prédits',
-        line_color='#9370DB',
-        fillcolor='rgba(147,112,219,0.1)'
-    ))
-    fig_scores.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 10],
-                tickfont=dict(color='#9370DB'),
-                gridcolor='#E6E6FA'
-            ),
-            angularaxis=dict(tickfont=dict(color='#9370DB'))
-        ),
-        title='Scores de bien-être (0-10)',
-        showlegend=False,
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=50, r=50, b=50, t=50),
-    )
-
-    # Affichage côte à côte des deux radars
+    # Affichage côte à côte : radar chart + image du cluster
     col1, col2 = st.columns(2)
     with col1:
         st.plotly_chart(fig, use_container_width=True)
-    with col2:
-        st.plotly_chart(fig_scores, use_container_width=True)
 
-    # Image cluster
-    cluster_images = {0: "Cluster_1.png", 1: "Cluster_2.png", 2: "Cluster_3.png", 3: "Cluster_4.png", 4: "Cluster_5.png"}
-    script_dir = os.path.dirname(__file__)
-    images_dir = os.path.join(os.path.dirname(script_dir), 'images')
-    image_filename = os.path.join(images_dir, cluster_images.get(user_cluster, 'Cluster_1.png'))
-    if os.path.exists(image_filename):
-        st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
-        st.image(image_filename)
-        st.markdown('</div>', unsafe_allow_html=True)
+    with col2:
+        # Chemin vers les images des clusters
+        script_dir = os.path.dirname(__file__)
+        images_dir = os.path.join(os.path.dirname(script_dir), 'images')
+        cluster_image_filename = os.path.join(images_dir, f"Cluster_{user_cluster + 1}_RC.png")
+
+        # Vérifier si l'image existe et l'afficher
+        if os.path.exists(cluster_image_filename):
+            st.image(cluster_image_filename, use_column_width=True)
+        else:
+            st.warning(f"L'image Cluster_{user_cluster + 1}_RC.png n'a pas été trouvée.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
