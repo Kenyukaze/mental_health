@@ -6,11 +6,8 @@ from sklearn.cluster import KMeans
 from datetime import datetime
 import joblib
 import os
-from sklearn.decomposition import PCA
-import plotly.express as px
 import plotly.graph_objects as go
 import statsmodels.api as sm
-from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 # Style CSS
 st.markdown(
@@ -168,7 +165,7 @@ if 'reponses_df' in st.session_state:
         if dep_var in df_encoded.columns:
             models[dep_var] = run_regression(df_encoded, dep_var, ['const'] + independent_vars)
 
-    # 🔹 Construire un DataFrame utilisateur spécifique à la régression
+    # Construire un DataFrame utilisateur spécifique à la régression
     user_data_reg = {}
     user_data_reg['Age'] = age_normalise
     for q, response in st.session_state.reponses_df.iloc[0].items():
@@ -184,44 +181,60 @@ if 'reponses_df' in st.session_state:
     user_df_regression = sm.add_constant(user_df_regression, has_constant='add')
     user_df_regression = user_df_regression.reindex(columns=expected_columns, fill_value=0)
 
-    # 🔹 Prédire les scores
+    # Prédire les scores
     predicted_scores = {}
     for dep_var, model in models.items():
         cols_needed = list(model.params.index)
         X_user = user_df_regression.reindex(columns=cols_needed, fill_value=0).astype(float)
         predicted_scores[dep_var] = float(model.predict(X_user)[0])
 
-    min_score = min(predicted_scores.values())
-    max_score = max(predicted_scores.values())
-    if max_score == min_score:
-        normalized_scores = {k: 0.5 for k in predicted_scores}
-    else:
-        normalized_scores = {k: (v - min_score) / (max_score - min_score) for k, v in predicted_scores.items()}
+    # Normaliser les scores par rapport à df_ref (moyenne=0, écart-type=1)
+    df_ref_scores = df_ref[dependent_vars].dropna()
+    normalized_scores = {}
+    for dep_var in predicted_scores:
+        mean = df_ref_scores[dep_var].mean()
+        std = df_ref_scores[dep_var].std()
+        if std == 0:
+            normalized_scores[dep_var] = 0.5
+        else:
+            normalized_scores[dep_var] = (predicted_scores[dep_var] - mean) / std
 
-    # 🔹 Radar chart des scores prédits
+    # Ajouter une valeur pour fermer le radar
+    normalized_scores_list = list(normalized_scores.values())
+    normalized_scores_list.append(normalized_scores_list[0])
+
+    # Noms des variables pour l'affichage
+    dep_var_labels = [var.replace('_', ' ') for var in normalized_scores.keys()]
+    dep_var_labels.append(dep_var_labels[0])
+
+    # Radar chart des scores prédits (normalisés)
     fig_scores = go.Figure()
     fig_scores.add_trace(go.Scatterpolar(
-        r=list(normalized_scores.values()) + [list(normalized_scores.values())[0]],
-        theta=[var.replace('_', ' ') for var in normalized_scores.keys()] +
-              [list(normalized_scores.keys())[0].replace('_', ' ')],
+        r=normalized_scores_list,
+        theta=dep_var_labels,
         fill='toself',
         name='Vos scores prédits',
         line_color='#9370DB',
         fillcolor='rgba(147,112,219,0.1)'
     ))
     fig_scores.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 1],
-                                   tickfont=dict(color='#9370DB'),
-                                   gridcolor='#E6E6FA'),
-                   angularaxis=dict(tickfont=dict(color='#9370DB'))),
-        title='Scores de bien-être (normalisés)',
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[-3, 3],
+                tickfont=dict(color='#9370DB'),
+                gridcolor='#E6E6FA'
+            ),
+            angularaxis=dict(tickfont=dict(color='#9370DB'))
+        ),
+        title='Scores de bien-être (normalisés par rapport à la population)',
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=50, r=50, b=50, t=50),
     )
 
-    # 🔹 Affichage côte à côte des deux radars
+    # Affichage côte à côte des deux radars
     col1, col2 = st.columns(2)
     with col1:
         st.plotly_chart(fig, use_container_width=True)
