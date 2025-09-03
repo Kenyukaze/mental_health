@@ -168,69 +168,68 @@ if 'reponses_df' in st.session_state:
         st.image(image_filename)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # =============================================
-    # NOUVEAU : Radar Chart des scores prédits
-    # =============================================
-    st.markdown('<p class="regression-title">Analyse des scores de bien-être</p>', unsafe_allow_html=True)
+  # =============================================
+# NOUVEAU : Radar Chart des scores prédits
+# =============================================
+st.markdown('<p class="regression-title">Analyse des scores de bien-être</p>', unsafe_allow_html=True)
 
-    # Ajouter une constante pour la régression
-    df_encoded = sm.add_constant(df_ref[independent_vars + dependent_vars].dropna())
+# Ajouter une constante pour la régression
+df_encoded = sm.add_constant(df_ref[independent_vars + dependent_vars].dropna())
 
-    # Fonction pour exécuter la régression linéaire multivariée
-    def run_regression(df, dependent_var, independent_vars):
-        X = df[independent_vars]
-        y = df[dependent_var]
-        X = X.astype(float)
-        y = y.astype(float)
-        model = sm.OLS(y, X).fit()
-        return model
+# Fonction pour exécuter la régression linéaire multivariée
+def run_regression(df, dependent_var, independent_vars):
+    X = df[independent_vars]
+    y = df[dependent_var]
+    X = X.astype(float)
+    y = y.astype(float)
+    model = sm.OLS(y, X).fit()
+    return model
 
-    # Exécuter la régression pour chaque variable dépendante
-    models = {}
-    for dep_var in dependent_vars:
-        if dep_var in df_encoded.columns:
-            models[dep_var] = run_regression(df_encoded, dep_var, independent_vars)
+# Exécuter la régression pour chaque variable dépendante
+models = {}
+for dep_var in dependent_vars:
+    if dep_var in df_encoded.columns:
+        models[dep_var] = run_regression(df_encoded, dep_var, ['const'] + independent_vars)
 
-    # Prédire les scores pour l'utilisateur
-    user_data_with_const = sm.add_constant(pd.DataFrame([user_data]))
-    predicted_scores = {}
-    for dep_var, model in models.items():
-        predicted_scores[dep_var] = model.predict(user_data_with_const)[0]
+# Préparer les données de l'utilisateur avec les bonnes colonnes
+user_df_for_prediction = pd.DataFrame([user_data])
+user_df_for_prediction = sm.add_constant(user_df_for_prediction)
+user_df_for_prediction = user_df_for_prediction[['const'] + independent_vars]  # Assurez-vous que les colonnes sont dans le bon ordre
 
-    # Normaliser les scores entre 0 et 1
-    min_score = min(predicted_scores.values())
-    max_score = max(predicted_scores.values())
-    normalized_scores = {k: (v - min_score) / (max_score - min_score) for k, v in predicted_scores.items()}
+# Prédire les scores pour l'utilisateur
+predicted_scores = {}
+for dep_var, model in models.items():
+    predicted_scores[dep_var] = model.predict(user_df_for_prediction)[0]
 
-    # Radar Chart des scores prédits
-    fig_scores = go.Figure()
+# Normaliser les scores entre 0 et 1
+min_score = min(predicted_scores.values())
+max_score = max(predicted_scores.values())
+normalized_scores = {k: (v - min_score) / (max_score - min_score) for k, v in predicted_scores.items()}
 
-    # Ajouter les scores normalisés au radar chart
-    fig_scores.add_trace(go.Scatterpolar(
-        r=list(normalized_scores.values()) + [list(normalized_scores.values())[0]],  # Fermer le polygone
-        theta=list(normalized_scores.keys()) + [list(normalized_scores.keys())[0]],  # Fermer le polygone
-        fill='toself',
-        name='Vos scores prédits',
-        line_color='#9370DB',
-        fillcolor='rgba(147,112,219,0.1)'
-    ))
+# Radar Chart des scores prédits
+fig_scores = go.Figure()
 
-    fig_scores.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 1]
-            )),
-        title='Scores de bien-être (normalisés)',
-        showlegend=False,
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=50, r=50, b=50, t=50),
-    )
+# Ajouter les scores normalisés au radar chart
+fig_scores.add_trace(go.Scatterpolar(
+    r=list(normalized_scores.values()) + [list(normalized_scores.values())[0]],  # Fermer le polygone
+    theta=list(normalized_scores.keys()) + [list(normalized_scores.keys())[0]],  # Fermer le polygone
+    fill='toself',
+    name='Vos scores prédits',
+    line_color='#9370DB',
+    fillcolor='rgba(147,112,219,0.1)'
+))
 
-    st.plotly_chart(fig_scores, use_container_width=True)
+fig_scores.update_layout(
+    polar=dict(
+        radialaxis=dict(
+            visible=True,
+            range=[0, 1]
+        )),
+    title='Scores de bien-être (normalisés)',
+    showlegend=False,
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    margin=dict(l=50, r=50, b=50, t=50),
+)
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
-else:
-    st.markdown('<p style="color:#6A5ACD;font-size:1.2em;text-align:center;">Aucune réponse enregistrée.</p>', unsafe_allow_html=True)
+st.plotly_chart(fig_scores, use_container_width=True)
