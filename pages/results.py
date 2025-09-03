@@ -49,9 +49,9 @@ if 'reponses_df' in st.session_state:
     df_ref = pd.read_csv("df_clusters.csv")
     continuous_cols = ['Age','Sleep_Hours','Social_Support_Score','Financial_Stress','Work_Stress','Self_Esteem_Score','Loneliness_Score']
     binary_cols = ['Family_History_Mental_Illness']
-
     scaler_path = 'scaler.save'
     model_path = 'kmeans_model.save'
+
     if os.path.exists(scaler_path) and os.path.exists(model_path):
         scaler_ref = joblib.load(scaler_path)
         kmeans = joblib.load(model_path)
@@ -75,9 +75,8 @@ if 'reponses_df' in st.session_state:
     age_normalise = int(((age-18)/(99-18))*9)+1
 
     # Préparer données utilisateur
-    user_data = {col:[0] for col in continuous_cols + binary_cols}
+    user_data = {col: [0] for col in continuous_cols + binary_cols}
     user_data['Age'] = [age_normalise]
-    user_data['Family_History_Mental_Illness'] = [0]
 
     for q, response in st.session_state.reponses_df.iloc[0].items():
         if q in question_mapping:
@@ -86,32 +85,33 @@ if 'reponses_df' in st.session_state:
                 val = 10 - val
             user_data[question_mapping[q]['variable']] = [val]
 
+    # Corriger la logique pour Family_History_Mental_Illness
     if 'Q6' in st.session_state.reponses_df.columns:
-        user_data['Family_History_Mental_Illness'] = [1 if st.session_state.reponses_df.iloc[0]['Q6']>5 else 0]
+        user_data['Family_History_Mental_Illness'] = [1 if st.session_state.reponses_df.iloc[0]['Q6'] <= 5 else 0]
 
     user_df = pd.DataFrame(user_data)[continuous_cols + binary_cols]
 
-    # --- DEBUG ---
+    # Debug: Afficher les données avant scaling
     st.subheader("🔍 Debugging")
     st.write("User data avant scaling :", user_df)
 
-    # Transformation scaler avec correspondance des colonnes
-    expected_features = scaler_ref.feature_names_in_
-    user_continuous = user_df[expected_features]
-    user_continuous_scaled = scaler_ref.transform(user_continuous)
-
-    # Ajouter colonnes binaires et reshape
+    # Scaling des colonnes continues uniquement
+    user_continuous_scaled = scaler_ref.transform(user_df[continuous_cols])
     user_binary = user_df[binary_cols].values
-    user_data_scaled = np.hstack((user_continuous_scaled, user_binary)).reshape(1,-1)
+    user_data_scaled = np.hstack((user_continuous_scaled, user_binary))
 
+    # Debug: Vérifier les shapes
+    st.write("Shape user_continuous_scaled:", user_continuous_scaled.shape)
+    st.write("Shape user_binary:", user_binary.shape)
     st.write("Shape user_data_scaled:", user_data_scaled.shape)
     st.write("Nb colonnes attendues:", len(continuous_cols + binary_cols))
 
+    # Création du DataFrame
     df_scaled = pd.DataFrame(user_data_scaled, columns=continuous_cols + binary_cols)
     st.write("User data après scaling :", df_scaled)
 
     # Cluster utilisateur
-    user_cluster = kmeans.predict(user_data_scaled)[0]
+    user_cluster = kmeans.predict(user_data_scaled.reshape(1, -1))[0]
     st.write("Cluster prédit :", user_cluster)
 
     # Clustering sur df_ref
@@ -131,7 +131,6 @@ if 'reponses_df' in st.session_state:
         4: "Votre profil indique un besoin d'attention particulière pour votre bien-être mental."
     }
     st.markdown(f'<div class="interpretation">{interpretations.get(user_cluster,"Interprétation non disponible")}</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # Radar Chart
     features = continuous_cols + binary_cols
@@ -165,29 +164,30 @@ if 'reponses_df' in st.session_state:
         margin=dict(l=50,r=50,b=50,t=50),
         title=dict(text="Radar Chart de vos indicateurs", font=dict(size=14,color='#6A5ACD'),x=0.38)
     )
-    st.plotly_chart(fig,use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
 
     # PCA clusters
     pca = PCA(n_components=2)
     pca_result = pca.fit_transform(X_ref_scaled)
     df_ref['pca1'] = pca_result[:,0]
     df_ref['pca2'] = pca_result[:,1]
-    user_pca = pca.transform(user_data_scaled)
+    user_pca = pca.transform(user_data_scaled.reshape(1, -1))
 
     fig_pca = px.scatter(df_ref, x="pca1", y="pca2",
                          color=df_ref['cluster'].astype(str),
                          title="Visualisation des clusters (PCA 2D)",
-                         opacity=0.6,width=700,height=500,
+                         opacity=0.6, width=700, height=500,
                          color_discrete_sequence=px.colors.qualitative.Set2)
-    fig_pca.add_scatter(x=[user_pca[0,0]],y=[user_pca[0,1]],mode="markers",
-                        marker=dict(size=15,color="red",symbol="x"),name="Utilisateur")
-    st.plotly_chart(fig_pca,use_container_width=True)
+    fig_pca.add_scatter(x=[user_pca[0,0]], y=[user_pca[0,1]], mode="markers",
+                        marker=dict(size=15, color="red", symbol="x"), name="Utilisateur")
+    st.plotly_chart(fig_pca, use_container_width=True)
 
     # Image cluster
-    cluster_images = {0:"Cluster_1.png",1:"Cluster_2.png",2:"Cluster_3.png",3:"Cluster_4.png",4:"Cluster_5.png"}
+    cluster_images = {0:"Cluster_1.png", 1:"Cluster_2.png", 2:"Cluster_3.png", 3:"Cluster_4.png", 4:"Cluster_5.png"}
     script_dir = os.path.dirname(__file__)
-    images_dir = os.path.join(os.path.dirname(script_dir),'images')
-    image_filename = os.path.join(images_dir, cluster_images.get(user_cluster,'Cluster_1.png'))
+    images_dir = os.path.join(os.path.dirname(script_dir), 'images')
+    image_filename = os.path.join(images_dir, cluster_images.get(user_cluster, 'Cluster_1.png'))
+
     if os.path.exists(image_filename):
         st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
         st.image(image_filename)
@@ -198,5 +198,6 @@ if 'reponses_df' in st.session_state:
         st.write("Fichiers disponibles :", os.listdir(images_dir) if os.path.exists(images_dir) else "Dossier introuvable")
         st.write("Dossier courant :", os.listdir(os.path.dirname(script_dir)))
 
+    st.markdown('</div>', unsafe_allow_html=True)
 else:
     st.markdown('<p style="color:#6A5ACD;font-size:1.2em;text-align:center;">Aucune réponse enregistrée.</p>', unsafe_allow_html=True)
