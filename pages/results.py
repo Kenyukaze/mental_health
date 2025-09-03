@@ -47,15 +47,29 @@ if 'reponses_df' in st.session_state:
 
     # Charger données référence et modèles
     df_ref = pd.read_csv("df_clusters.csv")
-    continuous_cols = ['Age','Sleep_Hours','Social_Support_Score','Financial_Stress','Work_Stress','Self_Esteem_Score','Loneliness_Score']
+    continuous_cols = ['Age', 'Sleep_Hours', 'Social_Support_Score', 'Financial_Stress', 'Work_Stress', 'Self_Esteem_Score', 'Loneliness_Score']
     binary_cols = ['Family_History_Mental_Illness']
     scaler_path = 'scaler.save'
     model_path = 'kmeans_model.save'
 
+    # Vérifier et recharger/réentraîner le scaler et le modèle si nécessaire
     if os.path.exists(scaler_path) and os.path.exists(model_path):
         scaler_ref = joblib.load(scaler_path)
         kmeans = joblib.load(model_path)
+        # Vérifier que le scaler a été entraîné avec les bonnes colonnes
+        if set(scaler_ref.feature_names_in_) != set(continuous_cols):
+            st.warning("Le scaler existant a été entraîné avec des colonnes différentes. Réentraînement...")
+            scaler_ref = StandardScaler()
+            X_ref_continuous = df_ref[continuous_cols]
+            X_ref_continuous_scaled = scaler_ref.fit_transform(X_ref_continuous)
+            X_ref_binary = df_ref[binary_cols].values
+            X_ref_scaled = np.hstack((X_ref_continuous_scaled, X_ref_binary))
+            kmeans = KMeans(n_clusters=5, random_state=42)
+            kmeans.fit(X_ref_scaled)
+            joblib.dump(scaler_ref, scaler_path)
+            joblib.dump(kmeans, model_path)
     else:
+        st.info("Entraînement initial du scaler et du modèle...")
         scaler_ref = StandardScaler()
         X_ref_continuous = df_ref[continuous_cols]
         X_ref_continuous_scaled = scaler_ref.fit_transform(X_ref_continuous)
@@ -72,7 +86,7 @@ if 'reponses_df' in st.session_state:
         age = datetime.now().year - date_naissance.year - ((datetime.now().month, datetime.now().day) < (date_naissance.month, date_naissance.day))
     else:
         age = 25
-    age_normalise = int(((age-18)/(99-18))*9)+1
+    age_normalise = int(((age - 18) / (99 - 18)) * 9) + 1
 
     # Préparer données utilisateur
     user_data = {col: [0] for col in continuous_cols + binary_cols}
@@ -93,17 +107,11 @@ if 'reponses_df' in st.session_state:
 
     # Debug: Afficher les données avant scaling
     st.subheader("🔍 Debugging")
-    st.write("User data avant scaling :", user_df)
-
-    # Vérifier les colonnes du scaler et celles de user_df
     st.write("Colonnes du scaler :", scaler_ref.feature_names_in_)
     st.write("Colonnes continues de user_df :", user_df[continuous_cols].columns.tolist())
 
-    # Filtrer les colonnes continues du scaler
-    scaler_continuous_features = [col for col in scaler_ref.feature_names_in_ if col in continuous_cols]
-
-    # Réorganiser les colonnes continues de user_df pour correspondre à celles du scaler
-    user_df[continuous_cols] = user_df[scaler_continuous_features]
+    # Réorganiser user_df[continuous_cols] pour correspondre à l'ordre du scaler
+    user_df[continuous_cols] = user_df[continuous_cols][scaler_ref.feature_names_in_]
 
     # Scaling des colonnes continues uniquement
     user_continuous_scaled = scaler_ref.transform(user_df[continuous_cols])
@@ -130,7 +138,7 @@ if 'reponses_df' in st.session_state:
     df_ref['cluster'] = kmeans.predict(X_ref_scaled)
     st.write("Répartition clusters df_ref :", df_ref['cluster'].value_counts())
 
-    st.markdown(f'<p class="cluster-title">Vous appartenez au groupe : {user_cluster+1}</p>', unsafe_allow_html=True)
+    st.markdown(f'<p class="cluster-title">Vous appartenez au groupe : {user_cluster + 1}</p>', unsafe_allow_html=True)
 
     # Interprétation clusters
     interpretations = {
@@ -140,16 +148,16 @@ if 'reponses_df' in st.session_state:
         3: "Votre profil indique des signes de fatigue ou d'anxiété.",
         4: "Votre profil indique un besoin d'attention particulière pour votre bien-être mental."
     }
-    st.markdown(f'<div class="interpretation">{interpretations.get(user_cluster,"Interprétation non disponible")}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="interpretation">{interpretations.get(user_cluster, "Interprétation non disponible")}</div>', unsafe_allow_html=True)
 
     # Radar Chart
     features = continuous_cols + binary_cols
     user_values = user_df.iloc[0].values.tolist()
     user_values.append(user_values[0])
     feature_labels = {
-        'Age':'Âge','Sleep_Hours':'Heures de sommeil','Social_Support_Score':'Soutien social',
-        'Financial_Stress':'Stress financier','Work_Stress':'Stress au travail','Self_Esteem_Score':'Estime de soi',
-        'Family_History_Mental_Illness':'Antécédents familiaux','Loneliness_Score':'Sentiment de solitude'
+        'Age': 'Âge', 'Sleep_Hours': 'Heures de sommeil', 'Social_Support_Score': 'Soutien social',
+        'Financial_Stress': 'Stress financier', 'Work_Stress': 'Stress au travail', 'Self_Esteem_Score': 'Estime de soi',
+        'Family_History_Mental_Illness': 'Antécédents familiaux', 'Loneliness_Score': 'Sentiment de solitude'
     }
     features_display = [feature_labels[f] for f in features]
     features_display.append(features_display[0])
@@ -165,22 +173,22 @@ if 'reponses_df' in st.session_state:
         hovertemplate='%{theta}: %{r}<extra></extra>'
     ))
     fig.update_layout(
-        polar=dict(radialaxis=dict(range=[0,10], tickfont=dict(color='#6A5ACD'), gridcolor='#E6E6FA'),
+        polar=dict(radialaxis=dict(range=[0, 10], tickfont=dict(color='#6A5ACD'), gridcolor='#E6E6FA'),
                    angularaxis=dict(direction='clockwise', tickfont=dict(color='#6A5ACD')),
                    bgcolor='rgba(0,0,0,0)'),
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=50,r=50,b=50,t=50),
-        title=dict(text="Radar Chart de vos indicateurs", font=dict(size=14,color='#6A5ACD'),x=0.38)
+        margin=dict(l=50, r=50, b=50, t=50),
+        title=dict(text="Radar Chart de vos indicateurs", font=dict(size=14, color='#6A5ACD'), x=0.38)
     )
     st.plotly_chart(fig, use_container_width=True)
 
     # PCA clusters
     pca = PCA(n_components=2)
     pca_result = pca.fit_transform(X_ref_scaled)
-    df_ref['pca1'] = pca_result[:,0]
-    df_ref['pca2'] = pca_result[:,1]
+    df_ref['pca1'] = pca_result[:, 0]
+    df_ref['pca2'] = pca_result[:, 1]
     user_pca = pca.transform(user_data_scaled.reshape(1, -1))
 
     fig_pca = px.scatter(df_ref, x="pca1", y="pca2",
@@ -188,12 +196,12 @@ if 'reponses_df' in st.session_state:
                          title="Visualisation des clusters (PCA 2D)",
                          opacity=0.6, width=700, height=500,
                          color_discrete_sequence=px.colors.qualitative.Set2)
-    fig_pca.add_scatter(x=[user_pca[0,0]], y=[user_pca[0,1]], mode="markers",
+    fig_pca.add_scatter(x=[user_pca[0, 0]], y=[user_pca[0, 1]], mode="markers",
                         marker=dict(size=15, color="red", symbol="x"), name="Utilisateur")
     st.plotly_chart(fig_pca, use_container_width=True)
 
     # Image cluster
-    cluster_images = {0:"Cluster_1.png", 1:"Cluster_2.png", 2:"Cluster_3.png", 3:"Cluster_4.png", 4:"Cluster_5.png"}
+    cluster_images = {0: "Cluster_1.png", 1: "Cluster_2.png", 2: "Cluster_3.png", 3: "Cluster_4.png", 4: "Cluster_5.png"}
     script_dir = os.path.dirname(__file__)
     images_dir = os.path.join(os.path.dirname(script_dir), 'images')
     image_filename = os.path.join(images_dir, cluster_images.get(user_cluster, 'Cluster_1.png'))
