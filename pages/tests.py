@@ -150,21 +150,30 @@ if 'reponses_df' in st.session_state:
         title=dict(text="Radar Chart de vos indicateurs", font=dict(size=14, color='#9370DB'), x=0.38)
     )
 
-    # Affichage côte à côte : radar chart + image du cluster
+    # Affichage côte à côte : radar chart + image spécifique au cluster
     col1, col2 = st.columns(2)
     with col1:
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        # Chemin vers les images des clusters
+        # Chemin vers les images des clusters (radar charts spécifiques)
         script_dir = os.path.dirname(__file__)
         images_dir = os.path.join(os.path.dirname(script_dir), 'images')
-        cluster_image_filename = os.path.join(images_dir, f"Cluster_{user_cluster + 1}_RC.png")
+        cluster_rc_image_filename = os.path.join(images_dir, f"Cluster_{user_cluster + 1}_RC.png")
 
         # Vérifier si l'image existe et l'afficher
-        if os.path.exists(cluster_image_filename):
-            st.image(cluster_image_filename, use_column_width=True)
+        if os.path.exists(cluster_rc_image_filename):
+            st.image(cluster_rc_image_filename, use_container_width=True)
         else:
             st.warning(f"L'image Cluster_{user_cluster + 1}_RC.png n'a pas été trouvée.")
+
+    # Image du cluster en bas de page (celle que tu souhaitais conserver)
+    cluster_images = {0: "Cluster_1.png", 1: "Cluster_2.png", 2: "Cluster_3.png", 3: "Cluster_4.png", 4: "Cluster_5.png"}
+    cluster_image_filename = os.path.join(images_dir, cluster_images.get(user_cluster, 'Cluster_1.png'))
+
+    if os.path.exists(cluster_image_filename):
+        st.markdown('<div class="cluster-image">', unsafe_allow_html=True)
+        st.image(cluster_image_filename, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
