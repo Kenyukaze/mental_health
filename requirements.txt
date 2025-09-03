@@ -1,7 +1,6 @@
-scikit-learn
+statsmodels
+scipy
 pandas
-numpy
-joblib
+scikit-learn
 plotly
 streamlit
-Statsmodels
