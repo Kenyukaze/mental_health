@@ -164,6 +164,7 @@ if 'reponses_df' in st.session_state:
         # Vérifier si l'image existe et l'afficher
         if os.path.exists(cluster_rc_image_filename):
             st.image(cluster_rc_image_filename, use_container_width=True)
+            width = 250
         else:
             st.warning(f"L'image Cluster_{user_cluster + 1}_RC.png n'a pas été trouvée.")
 
