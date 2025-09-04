@@ -87,7 +87,7 @@ st.markdown('<p class="subtitle">Question 6/7</p>', unsafe_allow_html=True)
 
 # Conteneur de la question
 st.markdown('<div class="question-container">', unsafe_allow_html=True)
-st.markdown('<p class="question-text">Avez-vous des antécédents familiaux de troubles de la santé mentale ?</p>', unsafe_allow_html=True)
+st.markdown('<p class="question-text">Dans votre famille proche (parents, frères et sœurs), des antécédents de troubles psychiatriques (dépression, anxiété, bipolarité, etc.) ont-ils été diagnostiqués ?</p>', unsafe_allow_html=True)
 
 # Initialiser la variable de réponse si elle n'existe pas
 if "reponse_q6" not in st.session_state:
