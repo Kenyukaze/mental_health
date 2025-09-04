@@ -147,7 +147,7 @@ if 'reponses_df' in st.session_state:
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=50, r=50, b=50, t=50),
-        title=dict(text="Radar Chart de vos indicateurs", font=dict(size=14, color='#9370DB'), x=0.38)
+        title=dict(text="Radar Chart de vos indicateurs", font=dict(size=14, color='#9370DB'), x=0.30)
     )
 
     # Affichage côte à côte : radar chart + image spécifique au cluster
