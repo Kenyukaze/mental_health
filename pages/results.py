@@ -32,10 +32,10 @@ st.markdown('<p class="main-title">Vos Résultats</p>', unsafe_allow_html=True)
 question_mapping = {
     'Q1': {'variable': 'Work_Stress', 'inverse': False},
     'Q2': {'variable': 'Sleep_Hours', 'inverse': False},
-    'Q3': {'variable': 'Social_Support_Score', 'inverse': True},
+    'Q3': {'variable': 'Social_Support_Score', 'inverse': False},
     'Q4': {'variable': 'Financial_Stress', 'inverse': False},
     'Q5': {'variable': 'Self_Esteem_Score', 'inverse': False},
-    'Q6': {'variable': 'Family_History_Mental_Illness', 'inverse': False},
+    'Q6': {'variable': 'Family_History_Mental_Illness', 'inverse': True},
     'Q7': {'variable': 'Loneliness_Score', 'inverse': False}
 }
 
