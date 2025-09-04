@@ -138,8 +138,8 @@ st.markdown('<p class="question-description">Utilisez le curseur ci-dessous pour
 
 # Affichage des valeurs min/max
 st.markdown('''<div class="slider-labels">
-    <span class="slider-label">1<br><small>Très faible</small></span>
-    <span class="slider-label">9<br><small>Très élevé</small></span>
+    <span class="slider-label">0<br><small>Très faible</small></span>
+    <span class="slider-label">10<br><small>Très élevé</small></span>
 </div>''', unsafe_allow_html=True)
 
 # Slider pour la réponse
