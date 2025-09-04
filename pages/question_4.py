@@ -131,7 +131,7 @@ st.markdown('<p class="subtitle">Question 4/7</p>', unsafe_allow_html=True)
 st.markdown('''<div class="question-container">''', unsafe_allow_html=True)
 
 # Titre de la question
-st.markdown('<p class="question-text">A l\'heure actuelle, à quel point le plan financier vous stresse-t-il ?</p>', unsafe_allow_html=True)
+st.markdown('<p class="question-text"> Votre situation financière actuelle génère-t-elle un stress significatif ou des préoccupations impactant votre bien-être ? </p>', unsafe_allow_html=True)
 
 # Description optionnelle
 st.markdown('<p class="question-description">Utilisez le curseur ci-dessous pour indiquer votre niveau de stress sur plan financier</p>', unsafe_allow_html=True)
@@ -143,7 +143,7 @@ st.markdown('''<div class="slider-labels">
 </div>''', unsafe_allow_html=True)
 
 # Slider pour la réponse
-reponse = st.slider("", 1, 9, 5, key="q4", label_visibility="collapsed")
+reponse = st.slider("", 0, 10, 5, key="q4", label_visibility="collapsed")
 st.session_state.reponses_df.at[0, "Q4"] = reponse
 
 # Fermeture du conteneur
