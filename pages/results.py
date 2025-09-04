@@ -34,8 +34,8 @@ question_mapping = {
     'Q2': {'variable': 'Sleep_Hours', 'inverse': False},
     'Q3': {'variable': 'Social_Support_Score', 'inverse': True},
     'Q4': {'variable': 'Financial_Stress', 'inverse': False},
-    'Q5': {'variable': 'Self_Esteem_Score', 'inverse': True},
-    'Q6': {'variable': 'Family_History_Mental_Illness', 'inverse': True},
+    'Q5': {'variable': 'Self_Esteem_Score', 'inverse': False},
+    'Q6': {'variable': 'Family_History_Mental_Illness', 'inverse': False},
     'Q7': {'variable': 'Loneliness_Score', 'inverse': False}
 }
 
