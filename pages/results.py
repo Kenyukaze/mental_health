@@ -85,7 +85,7 @@ if 'reponses_df' in st.session_state:
             (datetime.now().month, datetime.now().day) < (date_naissance.month, date_naissance.day))
     else:
         age = 25
-    age_normalise = int(((age - 18) / (99 - 18)) * 9) + 1
+    age_normalise = int(((age) / (99)) * 9) + 1
 
     # Données utilisateur pour clustering
     user_data = {col: [0] for col in continuous_cols + binary_cols}
