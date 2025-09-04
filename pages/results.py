@@ -34,8 +34,8 @@ question_mapping = {
     'Q2': {'variable': 'Sleep_Hours', 'inverse': False},
     'Q3': {'variable': 'Social_Support_Score', 'inverse': True},
     'Q4': {'variable': 'Financial_Stress', 'inverse': False},
-    'Q5': {'variable': 'Self_Esteem_Score', 'inverse': True},
-    'Q6': {'variable': 'Family_History_Mental_Illness', 'inverse': True},
+    'Q5': {'variable': 'Self_Esteem_Score', 'inverse': False},
+    'Q6': {'variable': 'Family_History_Mental_Illness', 'inverse': False},
     'Q7': {'variable': 'Loneliness_Score', 'inverse': False}
 }
 
@@ -85,7 +85,7 @@ if 'reponses_df' in st.session_state:
             (datetime.now().month, datetime.now().day) < (date_naissance.month, date_naissance.day))
     else:
         age = 25
-    age_normalise = int(((age - 18) / (99 - 18)) * 9) + 1
+    age_normalise = int(((age) / (99)) * 9) + 1
 
     # Données utilisateur pour clustering
     user_data = {col: [0] for col in continuous_cols + binary_cols}
