@@ -143,7 +143,7 @@ st.markdown('''<div class="slider-labels">
 </div>''', unsafe_allow_html=True)
 
 # Slider pour la réponse
-reponse = st.slider("", 0, 0, 5, key="q1", label_visibility="collapsed")
+reponse = st.slider("", 0, 10, 5, key="q1", label_visibility="collapsed")
 
 # Enregistrement de la réponse
 st.session_state.reponses_df.at[0, "Q1"] = reponse
