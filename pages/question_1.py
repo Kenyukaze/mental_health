@@ -131,7 +131,7 @@ st.markdown('<p class="subtitle">Question 1/7</p>', unsafe_allow_html=True)
 st.markdown('''<div class="question-container">''', unsafe_allow_html=True)
 
 # Titre de la question
-st.markdown('<p class="question-text">À quel point vous sentez-vous stressé(e) au travail ?</p>', unsafe_allow_html=True)
+st.markdown('<p class="question-text">Sur une échelle de 1 à 10, quel est votre niveau de stress lié à votre environnement professionnel au cours du dernier mois ?</p>', unsafe_allow_html=True)
 
 # Description optionnelle
 st.markdown('<p class="question-description">Utilisez le curseur ci-dessous pour indiquer votre niveau de stress</p>', unsafe_allow_html=True)
@@ -143,7 +143,7 @@ st.markdown('''<div class="slider-labels">
 </div>''', unsafe_allow_html=True)
 
 # Slider pour la réponse
-reponse = st.slider("", 1, 9, 5, key="q1", label_visibility="collapsed")
+reponse = st.slider("", 0, 0, 5, key="q1", label_visibility="collapsed")
 
 # Enregistrement de la réponse
 st.session_state.reponses_df.at[0, "Q1"] = reponse

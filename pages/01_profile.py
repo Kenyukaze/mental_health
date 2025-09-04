@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Style personnalisé pour la charte graphiques
+# Style personnalisé pour la charte graphique
 st.markdown(
     """
     <style>
@@ -75,6 +75,29 @@ st.markdown(
         justify-content: flex-end;
         margin-top: 20px;
     }
+    .rgpd-container {
+        background-color: rgba(248, 248, 255, 0.9);
+        border-radius: 15px;
+        padding: 20px;
+        margin: 30px auto;
+        max-width: 600px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        font-size: 0.9em;
+        color: #6A5ACD;
+        text-align: left;
+    }
+    .rgpd-title {
+        color: #9370DB;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .rgpd-link {
+        color: #6A5ACD !important;
+        text-decoration: none;
+    }
+    .rgpd-link:hover {
+        text-decoration: underline;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -116,22 +139,52 @@ if st.button("Enregistrer mes informations"):
     else:
         st.markdown('<p class="warning-message">Veuillez remplir tous les champs pour continuer.</p>', unsafe_allow_html=True)
 
-
 # Initialisation du DataFrame pour les réponses
 if 'reponses_df' not in st.session_state:
     st.session_state.reponses_df = pd.DataFrame(columns=["Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7"], index=[0])
-    st.session_state.reponses_df.loc[0] = [None, None, None, None, None, None, None]  # Une seule ligne avec des valeurs None
-
-
+    st.session_state.reponses_df.loc[0] = [None, None, None, None, None, None, None]
 
 # Bouton "Accéder au questionnaire" en bas à droite
 st.markdown('<div class="next-button-container">', unsafe_allow_html=True)
 if st.button("Accéder au questionnaire"):
     st.switch_page("pages/question_1.py")
-
 st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
+
+# --- Mention RGPD ---
+st.markdown(
+    """
+    <div class="rgpd-container">
+        <p class="rgpd-title">🔒 Protection de vos données (RGPD)</p>
+        <p>
+            Conformément au <strong>Règlement Général sur la Protection des Données (RGPD)</strong>, nous nous engageons à protéger vos données personnelles et sensibles, notamment celles liées à votre santé.
+        </p>
+        <p>
+            <strong>Vos droits :</strong>
+            <ul style="margin-top: 10px; margin-bottom: 10px; padding-left: 20px;">
+                <li>Accéder, rectifier ou supprimer vos données.</li>
+                <li>Vous opposer ou limiter le traitement de vos données.</li>
+                <li>Bénéficier de la portabilité de vos données.</li>
+                <li>Retirer votre consentement à tout moment.</li>
+            </ul>
+        </p>
+        <p>
+            Vos données sont <strong>chiffrées</strong>, stockées en conformité avec les normes de sécurité en vigueur, et ne sont jamais partagées sans votre accord explicite.
+        </p>
+        <p>
+            Pour exercer vos droits ou obtenir plus d'informations, contactez notre <strong>Délégué à la Protection des Données (DPO)</strong> :
+            <a class="rgpd-link" href="mailto:dpo@votre-application.fr">dpo@votre-application.fr</a>.
+        </p>
+        <p style="font-size: 0.8em; margin-top: 10px;">
+            *En savoir plus :
+            <a class="rgpd-link" href="/politique-de-confidentialite">Politique de confidentialité</a> |
+            <a class="rgpd-link" href="/cgu">Conditions Générales d'Utilisation</a>
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # Pied de page
 st.markdown("---")

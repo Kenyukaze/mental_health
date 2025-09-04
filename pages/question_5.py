@@ -131,7 +131,7 @@ st.markdown('<p class="subtitle">Question 5/7</p>', unsafe_allow_html=True)
 st.markdown('''<div class="question-container">''', unsafe_allow_html=True)
 
 # Titre de la question
-st.markdown('<p class="question-text">Comment évaluez-vous votre niveau d\'estime de vous ?</p>', unsafe_allow_html=True)
+st.markdown('<p class="question-text">Comment évalueriez-vous votre estime de soi ou votre confiance en vous sur une échelle de 1 à 10 ?</p>', unsafe_allow_html=True)
 
 # Description optionnelle
 st.markdown('<p class="question-description">Utilisez le curseur ci-dessous pour indiquer votre niveau d\'estime de vous</p>', unsafe_allow_html=True)
@@ -143,7 +143,7 @@ st.markdown('''<div class="slider-labels">
 </div>''', unsafe_allow_html=True)
 
 # Slider pour la réponse
-reponse = st.slider("", 1, 9, 5, key="q5", label_visibility="collapsed")
+reponse = st.slider("", 0, 10, 5, key="q5", label_visibility="collapsed")
 st.session_state.reponses_df.at[0, "Q5"] = reponse
 
 # Fermeture du conteneur

@@ -2,7 +2,7 @@ import streamlit as st
 
 # Configuration de la page
 st.set_page_config(
-    page_title="Application de Santé Mentale",
+    page_title="MINDNEST",
     page_icon="🧠",
     layout="wide"
 )
@@ -44,8 +44,8 @@ st.markdown(
 )
 
 # Titre principal
-st.markdown('<p class="title">Application de Santé Mentale</p>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">Un espace dédié à votre bien-être mental</p>', unsafe_allow_html=True)
+st.markdown('<p class="title">MINDNEST</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">Comprends toi, Feel Better</p>', unsafe_allow_html=True)
 
 # Barre latérale pour la navigation
 menu = st.sidebar.radio(
@@ -75,7 +75,7 @@ if menu == "Description":
             </ul>
             <p>
                 Que vous soyez en quête d’outils pour gérer votre stress, améliorer votre sommeil, ou simplement mieux vous connaître,
-                cette application est conçue pour <strong>vous orienter et vous soutenir</strong>, étape par étape, vers un mieux-être durable.
+                MINDNEST est conçue pour <strong>vous orienter et vous soutenir</strong>, étape par étape, vers un mieux-être durable.
             </p>
         </div>
         """,
