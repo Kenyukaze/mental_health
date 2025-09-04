@@ -131,7 +131,7 @@ st.markdown('<p class="subtitle">Question 2/7</p>', unsafe_allow_html=True)
 st.markdown('''<div class="question-container">''', unsafe_allow_html=True)
 
 # Titre de la question
-st.markdown('<p class="question-text">Combien d\'heures par nuit dormez-vous actuellement ?</p>', unsafe_allow_html=True)
+st.markdown('<p class="question-text">En moyenne, combien d\'heures de sommeil par nuit avez-vous eu au cours des 4 dernières semaines ? </p>', unsafe_allow_html=True)
 
 # Description optionnelle
 st.markdown('<p class="question-description">Utilisez le curseur ci-dessous pour indiquer votre la qualité de votre sommeil</p>', unsafe_allow_html=True)
